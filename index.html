@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>台州府城 · 智慧文旅AI导览系统</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<style>
+  :root{
+    --page-color:#c9a14a;
+    --primary:#c9a14a;
+    --primary-dark:#8c6a24;
+    --text:#1f2937;
+    --bg:#fff;
+    --glass:rgba(0,0,0,.45);
+    --radius:14px;
+    --shadow:0 8px 24px rgba(0,0,0,.18);
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
+    --safe-top:env(safe-area-inset-top, 0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:var(--text);background:#000;overflow:hidden;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  a{text-decoration:none;color:inherit;}
+  img,video{display:block;max-width:100%;}
+  .app{position:relative;width:100vw;height:100vh;overflow:hidden;background:#111;}
+
+  /* ============ Pages ============ */
+  .page{
+    position:absolute;inset:0;
+    display:none;
+    flex-direction:column;
+    padding-top:calc(16px + var(--safe-top));
+    padding-bottom:calc(72px + var(--safe-bottom));
+    overflow:hidden;
+  }
+  /* Scenic, Q&A, Trip use full-height backgrounds */
+  #scenic, #qa, #trip{
+    padding-top:0;
+    padding-bottom:calc(72px + var(--safe-bottom));
+  }
+  /* Trip & Q&A have internal controls so need top padding */
+  #trip, #qa{
+    padding-top:calc(16px + var(--safe-top));
+  }
+  .page.active{display:flex;}
+  .page-bg{position:absolute;inset:0;z-index:0;overflow:hidden;background:#111;}
+  .page-bg video,.page-bg img{
+    width:100%;height:100%;object-fit:cover;display:block;
+    background:#000;
+  }
+  .page-bg video{z-index:1;background:#000;}
+  .page-bg video::-webkit-media-controls-start-playback-button{display:none;}
+  .page-bg video::-webkit-media-controls{display:none;}
+  .page-mask{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25) 0%,rgba(0,0,0,.55) 100%);z-index:1;}
+  .page-content{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+  /* ============ Top-right controls ============ */
+  .top-bar{
+    position:absolute;top:calc(12px + var(--safe-top));right:12px;z-index:30;
+    display:flex;gap:10px;align-items:center;
+  }
+  .icon-btn{
+    width:44px;height:44px;border-radius:50%;
+    background:rgba(255,255,255,.18);backdrop-filter:blur(10px);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:16px;transition:.25s;
+    border:1px solid rgba(255,255,255,.25);
+  }
+  .icon-btn:hover{background:rgba(255,255,255,.28);transform:scale(1.05);}
+
+  /* ============ Bottom Nav ============ */
+  .bottom-nav{
+    position:absolute;left:0;right:0;bottom:0;z-index:40;
+    display:flex;justify-content:space-around;align-items:stretch;
+    background:rgba(12,12,12,.92);backdrop-filter:blur(16px);
+    padding:6px 8px calc(6px + var(--safe-bottom));
+    border-top:1px solid rgba(255,255,255,.08);
+    min-height:66px;
+  }
+  .nav-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:4px;color:#bbb;font-size:12px;padding:6px 4px;
+    min-height:50px;border-radius:10px;transition:.25s;
+  }
+  .nav-item i{font-size:20px;}
+  .nav-item.active{color:var(--page-color);}
+  .nav-item.active i{transform:scale(1.15);}
+  .nav-item:hover{color:var(--page-color);}
+
+  /* ============ Home Page ============ */
+  #home .home-inner{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:#fff;text-align:center;padding:20px;
+  }
+  .home-title-big{
+    font-size:clamp(40px,9vw,88px);font-weight:900;letter-spacing:.15em;
+    color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.6),0 0 20px rgba(201,161,74,.45);
+    opacity:0;transform:translateY(20px) scale(.95);
+    font-family:"STKaiti","KaiTi","楷体",serif;
+    background:linear-gradient(180deg,#fff 0%,#ffe6a8 60%,#c9a14a 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));
+    pointer-events:none;
+  }
+  .home-title-big.show{animation:fadeShow 5s ease forwards;}
+  @keyframes fadeShow{
+    0%{opacity:0;transform:translateY(20px) scale(.92);}
+    15%{opacity:1;transform:translateY(0) scale(1);}
+    80%{opacity:1;transform:translateY(-4px) scale(1);}
+    100%{opacity:0;transform:translateY(-20px) scale(1.02);}
+  }
+  .home-sub{
+    margin-top:26px;padding:14px 28px;border-radius:40px;
+    background:rgba(0,0,0,.35);backdrop-filter:blur(10px);
+    color:#fff;font-size:clamp(16px,2.6vw,22px);letter-spacing:.2em;
+    border:1px solid rgba(255,255,255,.2);
+    font-family:"STKaiti","KaiTi","楷体",serif;
+  }
+  .home-entry{
+    display:flex;gap:14px;margin-top:36px;flex-wrap:wrap;justify-content:center;
+  }
+  .entry-btn{
+    padding:14px 24px;border-radius:40px;
+    background:linear-gradient(135deg,rgba(201,161,74,.9),rgba(140,106,36,.92));
+    color:#fff;font-size:15px;font-weight:600;letter-spacing:.1em;
+    border:1px solid rgba(255,255,255,.25);
+    box-shadow:0 6px 18px rgba(0,0,0,.3);
+    transition:.25s;min-height:48px;
+  }
+  .entry-btn i{margin-right:8px;}
+  .entry-btn:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,.45);}
+  .season-switch{
+    position:absolute;left:14px;bottom:calc(82px + var(--safe-bottom));z-index:30;
+    display:flex;gap:8px;background:rgba(0,0,0,.4);backdrop-filter:blur(10px);
+    padding:8px;border-radius:40px;border:1px solid rgba(255,255,255,.15);
+  }
+  .season-btn{
+    width:42px;height:42px;border-radius:50%;color:#fff;font-size:16px;
+    display:flex;align-items:center;justify-content:center;transition:.25s;
+    background:rgba(255,255,255,.08);
+  }
+  .season-btn.active{background:var(--primary);box-shadow:0 0 14px var(--primary);color:#fff;}
+  .season-btn[data-s="spring"]{--sb:#a7d9a2;}
+  .season-btn[data-s="summer"]{--sb:#ffd76a;}
+  .season-btn[data-s="autumn"]{--sb:#e68a3c;}
+  .season-btn[data-s="winter"]{--sb:#9cc7ea;}
+  .season-btn.active{background:var(--sb,var(--primary));}
+
+  /* ============ Scenic Guide Page ============ */
+  #scenic .map-wrap{
+    position:absolute;inset:0;overflow:hidden;
+    touch-action:none;
+  }
+  /* ============ Scenic Page Map ============ */
+  .map-wrap{position:relative;width:100%;height:100%;overflow:hidden;touch-action:none;background:#0a0a0a;}
+  .map-panels{
+    position:absolute;top:50%;left:50%;
+    width:1728px;height:2304px;
+    transform-origin:center center;
+    will-change:transform;
+  }
+  .map-img{
+    position:absolute;top:0;left:0;
+    width:100%;height:100%;
+    background-size:100% 100%;
+    background-position:0 0;
+    background-repeat:no-repeat;
+    will-change:transform;
+  }
+  .map-highlight-ring{
+    position:absolute;
+    width:180px;height:180px;border-radius:50%;
+    border:3px solid var(--primary);
+    background:radial-gradient(circle,rgba(201,161,74,.35),rgba(201,161,74,0) 70%);
+    transform:translate(-50%,-50%);pointer-events:none;opacity:0;transition:opacity .4s;
+    z-index:8;
+  }
+  .map-highlight-ring.show{opacity:1;animation:ringPulse 1.8s ease-in-out infinite;}
+  @keyframes ringPulse{
+    0%,100%{transform:translate(-50%,-50%) scale(1);}
+    50%{transform:translate(-50%,-50%) scale(1.12);}
+  }
+  .spot-btn{
+    position:absolute;
+    transform:translate(-50%,-50%);
+    display:flex;align-items:center;gap:4px;
+    padding:6px 10px 6px 8px;border-radius:40px;
+    background:linear-gradient(135deg,rgba(255,255,255,.97),rgba(255,240,200,.92));
+    color:#7a5512;font-size:13px;font-weight:600;
+    box-shadow:0 4px 14px rgba(0,0,0,.35);
+    border:2px solid #c9a14a;
+    min-height:36px;transition:.25s;z-index:10;
+    /* Disable native font scaling on mobile */
+    -webkit-text-size-adjust:100%;
+    text-size-adjust:100%;
+  }
+  .spot-btn:hover{transform:translate(-50%,-50%) scale(1.06);}
+  .spot-btn .dot{width:10px;height:10px;border-radius:50%;background:#c9a14a;box-shadow:0 0 8px #c9a14a;flex-shrink:0;}
+  .spot-btn .nav-icon{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:50%;
+    background:#e8594a;color:#fff;font-size:11px;margin-left:2px;
+    cursor:pointer;flex-shrink:0;transition:.25s;
+  }
+  .spot-btn .nav-icon:hover{background:#d13e30;transform:scale(1.15);}
+  .spot-btn.region{
+    background:linear-gradient(135deg,#c9a14a,#8c6a24);color:#fff;border-color:#fff;font-size:15px;padding:10px 16px;min-height:42px;
+    animation:pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(201,161,74,.6);}
+    50%{box-shadow:0 0 0 14px rgba(201,161,74,0);}
+  }
+  .spot-btn.region .dot{background:#fff;box-shadow:0 0 8px #fff;}
+
+  /* Page 2 side panel */
+  .scenic-side-panel{
+    position:absolute;right:12px;top:50%;transform:translateY(-50%);
+    width:min(320px,80vw);max-height:70vh;border-radius:var(--radius);
+    background:rgba(255,255,255,.97);backdrop-filter:blur(10px);
+    box-shadow:var(--shadow);padding:16px;z-index:20;
+    overflow-y:auto;display:none;
+  }
+  .scenic-side-panel.show{display:block;animation:pop .3s ease;}
+  @keyframes pop{from{opacity:0;transform:translateY(-50%) scale(.92);}to{opacity:1;transform:translateY(-50%) scale(1);}}
+  .scenic-side-panel h3{margin:0 0 10px;color:#7a5512;font-size:18px;display:flex;align-items:center;gap:8px;}
+  .vr-btn{
+    width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#c9a14a,#8c6a24);
+    color:#fff;font-size:15px;font-weight:600;margin:6px 0;display:flex;align-items:center;justify-content:center;gap:8px;
+    min-height:48px;transition:.25s;
+  }
+  .vr-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(201,161,74,.4);}
+
+  .spot-list{display:flex;flex-direction:column;gap:12px;}
+  .spot-card{border-radius:12px;background:#fff;border:1px solid #eee;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.08);}
+  .spot-imgs{position:relative;width:100%;padding-top:56%;overflow:hidden;background:#000;}
+  .spot-imgs img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s;}
+  .spot-imgs img.active{opacity:1;}
+  .spot-imgs .carousel-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:3;}
+  .spot-imgs .carousel-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.5);cursor:pointer;transition:.25s;}
+  .spot-imgs .carousel-dots span.active{background:#fff;width:20px;border-radius:4px;}
+  .spot-body{padding:14px;}
+  .spot-body h4{margin:0 0 6px;color:#333;font-size:18px;display:flex;align-items:center;gap:8px;}
+  .spot-body p{margin:0 0 10px;color:#555;font-size:14px;line-height:1.7;}
+  .spot-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .spot-actions button{padding:8px 14px;border-radius:8px;background:#f3e7c7;color:#7a5512;font-size:13px;display:flex;align-items:center;gap:6px;min-height:40px;transition:.25s;}
+  .spot-actions button:hover{background:#c9a14a;color:#fff;}
+  .spot-actions button.active{background:#c9a14a;color:#fff;}
+  .spot-close{position:absolute;right:8px;top:8px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;}
+
+  /* VR Modal */
+  .vr-modal{
+    position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.88);
+    display:none;align-items:center;justify-content:center;padding:16px;
+  }
+  .vr-modal.show{display:flex;}
+  .vr-box{
+    width:min(1100px,96vw);height:min(720px,86vh);
+    background:#000;border-radius:14px;overflow:hidden;position:relative;
+    box-shadow:0 20px 60px rgba(0,0,0,.8);
+  }
+  .vr-box iframe{width:100%;height:100%;border:0;}
+  .vr-controls{
+    position:absolute;top:10px;left:10px;right:10px;display:flex;gap:10px;z-index:3;
+  }
+
+  /* ============ Trip Page ============ */
+  #trip .trip-layout{
+    display:flex;flex:1;gap:12px;padding:12px;overflow:hidden;
+  }
+  .trip-left{
+    width:min(280px,30vw);background:rgba(255,255,255,.95);border-radius:var(--radius);
+    padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow);overflow-y:auto;
+  }
+  .trip-right{flex:1;background:rgba(255,255,255,.96);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:10px;overflow:hidden;}
+  .trip-tab{padding:10px;border-radius:10px;background:#f3e7c7;color:#7a5512;font-weight:600;text-align:left;transition:.25s;min-height:42px;}
+  .trip-tab.active{background:linear-gradient(135deg,#c9a14a,#8c6a24);color:#fff;}
+  .route-btn{padding:10px;border-radius:10px;background:#fff;border:2px solid #e8d8a8;color:#7a5512;font-weight:600;text-align:left;display:flex;align-items:center;gap:8px;min-height:44px;transition:.25s;}
+  .route-btn.active{border-color:#c9a14a;background:#fff8e7;}
+  .route-img-wrap{flex:1;position:relative;border-radius:10px;overflow:hidden;background:#f6f0dd;min-height:260px;}
+  .route-img{width:100%;height:100%;object-fit:contain;background:#f6f0dd;transition:transform .4s;}
+  .zoom-controls{position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:2;}
+  .zoom-controls button{width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:14px;}
+  .route-desc{background:#fffaf0;padding:12px;border-radius:10px;color:#5c4423;font-size:14px;line-height:1.75;max-height:180px;overflow-y:auto;}
+
+  .form-row{display:flex;flex-direction:column;gap:4px;}
+  .form-row label{font-size:13px;color:#7a5512;font-weight:600;}
+  .form-row select,.form-row input{padding:9px 10px;border-radius:8px;border:1px solid #e8d8a8;background:#fff;font-size:14px;min-height:42px;}
+  .ai-gen-btn{padding:12px;border-radius:10px;background:linear-gradient(135deg,#c9a14a,#8c6a24);color:#fff;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;transition:.25s;}
+  .ai-gen-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.3);}
+  .ai-gen-btn:disabled{opacity:.6;cursor:not-allowed;}
+  .ai-plan-result{flex:1;background:#fffaf0;border-radius:10px;padding:14px;overflow-y:auto;color:#333;font-size:14px;line-height:1.8;white-space:pre-wrap;border:1px dashed #e8d8a8;}
+
+  .weather-panel{
+    position:absolute;top:calc(12px + var(--safe-top));right:12px;z-index:30;
+    background:rgba(255,255,255,.95);backdrop-filter:blur(10px);
+    padding:10px 14px;border-radius:12px;box-shadow:var(--shadow);
+    display:flex;align-items:center;gap:10px;font-size:13px;color:#5c4423;max-width:240px;
+  }
+  .weather-panel select{border:1px solid #e8d8a8;border-radius:6px;padding:3px 6px;font-size:12px;}
+  .weather-panel .w-icon{font-size:20px;}
+
+  /* ============ Q&A Page ============ */
+  #qa .qa-layout{display:flex;flex-direction:column;height:100%;padding:16px;gap:12px;}
+  .qa-card-wrap{
+    position:relative;height:230px;border-radius:14px;overflow:visible;
+  }
+  .qa-cards-scroll{
+    position:absolute;top:0;left:0;right:0;height:170px;overflow:hidden;border-radius:14px;
+    background:#fdf6e3;
+    background-image:linear-gradient(rgba(253,246,227,.92),rgba(243,231,199,.92)),url('./Assets/Images/card_bg.jpg');
+    background-size:cover;background-position:center;
+    box-shadow:0 6px 22px rgba(0,0,0,.3);
+    border:1px solid rgba(201,161,74,.3);
+    padding:12px 16px;
+  }
+  .qa-card{
+    position:absolute;left:12px;right:12px;padding:10px 14px;border-radius:12px;
+    background:linear-gradient(135deg,rgba(255,255,255,.97),rgba(243,231,199,.88));
+    color:#5c4423;font-size:14px;line-height:1.75;
+    box-shadow:0 4px 14px rgba(0,0,0,.12);transition:transform 3s linear,opacity 1.5s linear;
+    pointer-events:none;backdrop-filter:blur(4px);
+  }
+  .qa-card.hide{opacity:0;transform:translateY(-100px) scale(.96);}
+  .qa-card-avatar{
+    position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+    width:120px;height:100px;display:flex;justify-content:center;align-items:flex-end;
+    pointer-events:none;
+  }
+  .qa-card-avatar video{width:96px;height:120px;object-fit:contain;filter:drop-shadow(0 6px 14px rgba(0,0,0,.35));}
+  .qa-chat{
+    flex:1;background:rgba(255,255,255,.97);border-radius:14px;padding:12px;
+    display:flex;flex-direction:column;gap:10px;overflow:hidden;box-shadow:var(--shadow);
+  }
+  .qa-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:6px;}
+  .qa-msg{padding:10px 14px;border-radius:14px;max-width:80%;font-size:14px;line-height:1.7;white-space:pre-wrap;}
+  .qa-msg.user{align-self:flex-end;background:linear-gradient(135deg,#c9a14a,#8c6a24);color:#fff;border-bottom-right-radius:4px;}
+  .qa-msg.ai{align-self:flex-start;background:#f6f0dd;color:#333;border-bottom-left-radius:4px;}
+  .qa-msg.typing::after{content:"▋";animation:blink 1s infinite;}
+  @keyframes blink{50%{opacity:0;}}
+  .qa-input-row{display:flex;gap:10px;align-items:center;}
+  .qa-controls{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#5c4423;min-width:130px;}
+  .qa-controls .row{display:flex;align-items:center;gap:6px;}
+  .qa-controls input[type=range]{flex:1;}
+  .qa-input{flex:1;display:flex;gap:6px;}
+  .qa-input input{flex:1;padding:12px 14px;border-radius:40px;border:1px solid #e8d8a8;background:#fff;font-size:14px;min-height:44px;}
+  .qa-input button{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#c9a14a,#8c6a24);color:#fff;font-size:16px;min-height:44px;transition:.25s;}
+  .qa-input button:hover{transform:scale(1.08);}
+
+  /* Responsive */
+  @media (max-width:720px){
+    .trip-layout{flex-direction:column;}
+    .trip-left{width:100%;max-height:200px;}
+    .qa-layout{padding:10px;gap:8px;}
+    .qa-cards{height:120px;}
+    .qa-controls{min-width:auto;flex-direction:row;flex-wrap:wrap;}
+    .home-entry{flex-direction:column;align-items:stretch;}
+    .entry-btn{justify-content:center;}
+    .scenic-side-panel{width:86%;max-height:60vh;right:7%;}
+    .spot-btn{font-size:11px;padding:5px 8px;}
+    .spot-btn.region{font-size:13px;padding:7px 12px;}
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-thumb{background:rgba(201,161,74,.4);border-radius:3px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  /* Toast */
+  .toast{
+    position:fixed;top:20%;left:50%;transform:translateX(-50%);
+    background:rgba(0,0,0,.8);color:#fff;padding:10px 20px;border-radius:30px;
+    font-size:14px;z-index:200;animation:toastIn .3s;
+  }
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,-10px);}to{opacity:1;transform:translate(-50%,0);}}
+
+  /* Mobile map touch scaling hint */
+  .map-zoom-hint{
+    position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+    background:rgba(0,0,0,.45);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;
+    z-index:12;pointer-events:none;opacity:.85;
+  }
+
+  .loading-dots{display:inline-flex;gap:3px;}
+  .loading-dots span{width:6px;height:6px;border-radius:50%;background:#c9a14a;animation:loadDot 1.4s infinite;}
+  .loading-dots span:nth-child(2){animation-delay:.2s;}
+  .loading-dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes loadDot{0%,80%,100%{opacity:.3;}40%{opacity:1;}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ============ Page 1: Home ============ -->
+  <section class="page active" id="home" data-page="home">
+    <div class="page-bg">
+      <video id="homeVideo" autoplay loop playsinline webkit-playsinline x5-playsinline preload="auto" poster="">
+        <source src="./Assets/Video/bj.mp4" type="video/mp4">
+        您的浏览器不支持视频播放
+      </video>
+    </div>
+    <div class="page-mask"></div>
+    <div class="top-bar">
+      <button class="icon-btn" id="muteBtn" title="静音切换"><i class="fas fa-volume-up"></i></button>
+    </div>
+    <div class="page-content home-inner">
+      <div class="home-title-big" id="homeBigTitle">台州府城旅游区</div>
+      <div class="home-sub">台州府城文化旅游区</div>
+      <div class="home-entry">
+        <button class="entry-btn" data-goto="scenic"><i class="fas fa-map-marked-alt"></i>景点导览</button>
+        <button class="entry-btn" data-goto="trip"><i class="fas fa-route"></i>行程规划</button>
+        <button class="entry-btn" data-goto="qa"><i class="fas fa-robot"></i>智能问答</button>
+      </div>
+    </div>
+    <div class="season-switch" id="seasonSwitch">
+      <button class="season-btn" data-s="spring" title="春">春</button>
+      <button class="season-btn active" data-s="summer" title="夏">夏</button>
+      <button class="season-btn" data-s="autumn" title="秋">秋</button>
+      <button class="season-btn" data-s="winter" title="冬">冬</button>
+    </div>
+  </section>
+
+  <!-- ============ Page 2: Scenic Guide ============ -->
+  <section class="page" id="scenic" data-page="scenic">
+    <div class="map-wrap" id="mapWrap">
+      <div class="map-panels" id="mapPanels">
+        <div class="map-img" id="mapImg"></div>
+        <div id="spotLayer"></div>
+        <div class="map-highlight-ring" id="mapRing"></div>
+      </div>
+      <div class="map-zoom-hint" id="zoomHint">双指缩放 · 拖拽移动</div>
+    </div>
+    <div class="scenic-side-panel" id="sidePanel">
+      <button class="spot-close" id="sideClose"><i class="fas fa-times"></i></button>
+      <h3 id="sideTitle"><i class="fas fa-vr-cardboard"></i>区域体验</h3>
+      <div id="sideVRs" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div style="margin-top:16px;border-top:1px solid #eee;padding-top:12px;">
+        <h4 style="margin:0 0 8px;color:#5c4423;font-size:14px;">景点详情</h4>
+        <div class="spot-list" id="spotList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Page 3: Trip Planning ============ -->
+  <section class="page" id="trip" data-page="trip">
+    <div class="page-bg">
+      <video id="tripVideo" autoplay loop playsinline webkit-playsinline x5-playsinline preload="auto">
+        <source src="./Assets/Video/bj.mp4" type="video/mp4">
+        您的浏览器不支持视频播放
+      </video>
+    </div>
+    <div class="page-mask"></div>
+    <div class="top-bar">
+      <div class="weather-panel" id="weatherPanel" style="display:none;">
+        <i class="fas fa-cloud-sun w-icon" id="weatherIcon">☀️</i>
+        <div>
+          <div id="weatherText" style="font-weight:600;">加载中…</div>
+          <select id="weatherDate" style="margin-top:4px;"></select>
+        </div>
+        <button class="icon-btn" id="muteBtn2" title="静音切换" style="width:32px;height:32px;font-size:13px;"><i class="fas fa-volume-up"></i></button>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="trip-layout">
+        <div class="trip-left">
+          <button class="trip-tab active" data-trip="official"><i class="fas fa-landmark"></i> 官方推荐</button>
+          <button class="trip-tab" data-trip="smart"><i class="fas fa-wand-magic-sparkles"></i> 智能推荐</button>
+          <div id="officialContent" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+            <button class="route-btn active" data-route="A"><i class="fas fa-route"></i> A 路线 · 经典文化游</button>
+            <button class="route-btn" data-route="B"><i class="fas fa-route"></i> B 路线 · 古城深度游</button>
+          </div>
+          <div id="smartContent" style="display:none;flex-direction:column;gap:10px;margin-top:8px;">
+            <div class="form-row">
+              <label>游玩天数</label>
+              <select id="daysSel">
+                <option value="1">1 天</option>
+                <option value="2" selected>2 天</option>
+                <option value="3">3 天</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>兴趣类型</label>
+              <select id="interestSel">
+                <option value="历史人文" selected>历史人文</option>
+                <option value="自然风光">自然风光</option>
+                <option value="美食体验">美食体验</option>
+                <option value="亲子休闲">亲子休闲</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>同行人员</label>
+              <select id="companySel">
+                <option value="独自" selected>独自</option>
+                <option value="情侣">情侣</option>
+                <option value="朋友">朋友</option>
+                <option value="家庭">家庭</option>
+              </select>
+            </div>
+            <button class="ai-gen-btn" id="generateBtn"><i class="fas fa-wand-magic-sparkles"></i> 生成AI个性化行程</button>
+          </div>
+        </div>
+        <div class="trip-right">
+          <div id="routeView" style="display:flex;gap:14px;flex:1;min-height:0;">
+            <div class="route-img-wrap">
+              <img id="routeImg" class="route-img" alt="路线图">
+              <div class="zoom-controls">
+                <button id="zoomIn" title="放大"><i class="fas fa-plus"></i></button>
+                <button id="zoomOut" title="缩小"><i class="fas fa-minus"></i></button>
+                <button id="zoomReset" title="重置"><i class="fas fa-rotate-left"></i></button>
+              </div>
+            </div>
+            <div class="route-desc" id="routeDesc"></div>
+          </div>
+          <div id="aiPlanView" style="display:none;flex-direction:column;gap:10px;flex:1;min-height:0;">
+            <div class="ai-plan-result" id="aiPlanResult">请点击左侧按钮生成您的专属行程…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Page 4: Q&A ============ -->
+  <section class="page" id="qa" data-page="qa">
+    <div class="page-bg">
+      <img id="qaBgImg" alt="">
+    </div>
+    <div class="page-mask" style="background:linear-gradient(180deg,rgba(20,15,5,.55),rgba(10,8,5,.85));"></div>
+    <div class="page-content">
+      <div class="qa-layout">
+        <div class="qa-card-wrap" id="qaCardWrap">
+          <div class="qa-cards-scroll" id="qaCards"></div>
+          <div class="qa-card-avatar">
+            <video id="girlVideo" autoplay loop muted playsinline webkit-playsinline x5-playsinline>
+              <source src="./Assets/Video/girl.mp4" type="video/mp4">
+            </video>
+          </div>
+        </div>
+        <div class="qa-chat">
+          <div class="qa-messages" id="qaMessages"></div>
+          <div class="qa-input-row">
+            <div class="qa-controls">
+              <div class="row">
+                <i class="fas fa-gauge-high"></i>
+                <span>语速</span>
+                <input type="range" id="speechRate" min="0.5" max="2" step="0.1" value="1">
+                <span id="rateVal">1.0</span>
+              </div>
+              <div class="row">
+                <i class="fas fa-volume-up"></i>
+                <span>语音</span>
+                <label class="switch" style="display:inline-flex;align-items:center;gap:4px;">
+                  <input type="checkbox" id="speechToggle" checked>
+                  <span id="speechStatus" style="color:#c9a14a;font-weight:600;">开</span>
+                </label>
+              </div>
+            </div>
+            <div class="qa-input">
+              <input id="qaInput" placeholder="请输入您想了解的问题，例如：东湖的最佳游览时间是什么时候？" />
+              <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Bottom Nav ============ -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" data-page="home"><i class="fas fa-home"></i><span>首页</span></button>
+    <button class="nav-item" data-page="scenic"><i class="fas fa-map-marked-alt"></i><span>景点导览</span></button>
+    <button class="nav-item" data-page="trip"><i class="fas fa-route"></i><span>行程规划</span></button>
+    <button class="nav-item" data-page="qa"><i class="fas fa-robot"></i><span>智能问答</span></button>
+  </nav>
+
+  <!-- ============ VR Modal ============ -->
+  <div class="vr-modal" id="vrModal">
+    <div class="vr-box">
+      <div class="vr-controls">
+        <button class="icon-btn" id="vrClose" title="关闭"><i class="fas fa-times"></i></button>
+        <button class="icon-btn" id="vrMute" title="静音"><i class="fas fa-volume-up"></i></button>
+        <button class="icon-btn" id="vrSubtitle" title="字幕"><i class="fas fa-closed-captioning"></i></button>
+      </div>
+      <iframe id="vrIframe" allow="autoplay; fullscreen; microphone" allowfullscreen></iframe>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   台州府城 · 智慧文旅AI导览系统
+   ========================================================= */
+
+// ---- State ----
+const state = {
+  page: 'home',
+  season: 'summer',
+  muted: false,
+  seasonMap: {
+    spring: 'Spring',
+    summer: 'Summer',
+    autumn: 'Autumn',
+    winter: 'Winter'
+  },
+  pinyinMap: {
+    '白云楼': 'baiyunlou',
+    '湖心亭': 'huxinting',
+    '揽胜门': 'lanshengmen',
+    '樵云阁': 'qiaoyunge',
+    '望天台': 'wangtiantai',
+    '天坛': 'wangtiantai',
+    '瓮城': 'wengcheng',
+    '西门街': 'ximenjie'
+  },
+  spotInfo: {
+    '白云楼': {
+      pos: [1151, 213],
+      desc: '坐落于北固山东侧，是台州府城墙的最高点。此楼为双层重檐歇山顶建筑，登楼远眺，可北望白云山，南瞰巾子山，将古城与新城的壮丽风光尽收眼底。'
+    },
+    '湖心亭': {
+      pos: [1389, 913],
+      desc: '位于东湖外湖，亭阁飞檐八出，造型空灵大气。亭内悬有清代学者俞樾所题楹联，将此间"好水好山"与西湖美景相提并论，是东湖的标志性景观。'
+    },
+    '揽胜门': {
+      pos: [1286, 546],
+      desc: '台州府城墙东端的起点。门前有象征性的198级"好汉坡"，登上城楼"顾景楼"回望，可将东湖美景与古城风貌一览无余，是俯瞰全景的绝佳位置。'
+    },
+    '樵云阁': {
+      pos: [1376, 852],
+      desc: '矗立于东湖之北，是全湖的最高建筑。登临此阁，四周湖光山色尽收眼底。阁名源于纪念一位为民族气节而投湖的樵夫，为美景增添了一份悲壮的历史传说。'
+    },
+    '望天台': {
+      pos: [486, 595],
+      desc: '即天坛，位于府城墙上。是古时台州府举行祭天、祈谷等重大祭祀典礼的神圣场所，承载着深厚的历史文化底蕴。'
+    },
+    '瓮城': {
+      pos: [870, 1823],
+      desc: '位于古城墙临江诸城门，为半圆形围合空间。清康熙年间修建，兼具军事防御与防洪功能，能有效围剿攻入城门的敌军。'
+    },
+    '西门街': {
+      pos: [870, 1110],
+      desc: '东西走向的历史老街，曾是西出府城通往杭州等地的要道。街两旁保留着明清至民国风格的建筑，店铺林立，是品味古城昔日繁华与市井烟火气的绝佳去处。'
+    }
+  },
+  regionSpeak: {
+    '紫阳街': '紫阳街全长约1080米，是台州府城的主干道，至今仍保持着北宋时期的里坊制格局。为中国历史文化名街，入选第一批浙江省非遗主题街区，2025年入选新一批国家级旅游休闲街区。古街上有悟真坊、顺政坊等坊墙，以及千佛井（与千佛塔遥遥相望）、中国人民银行台州支行旧址等历史遗迹。街区展示有剪纸、草编、黄沙狮子等20余项非遗。特色美食有蛋清羊尾、海苔饼、梅花糕、麦虾、糟羹。古街因道教南宗鼻祖张伯端（紫阳真人）得名，也记载着戚继光、朱自清等名人往事。',
+    '东湖': '东湖因位于台州府城墙东侧而得名，南北长约500米，东西宽约150米。清代文人俞樾曾赞誉：杭州有西湖，台州有东湖，东湖之胜，小西湖也。前身是北宋初年的水军营，后由郡守钱暄于熙宁四年开凿成湖，以导流分洪。分为前湖和后湖，有台州园林之首的美誉。主要景点包括湖心亭、半勾亭、九曲桥，以及骆宾王祠。在九曲桥正中间可拍摄亭台倒影，从北固山揽胜门可俯拍东湖全景。',
+    '台州府城墙': '台州府城墙始建于东晋，距今已有1600余年历史，现存全长4700余米。古建筑学家罗哲文誉其为北京八达岭等长城的师范和蓝本。城墙沿北固山山脊蜿蜒至灵江东岸，揽胜门是主要入口，有198级台阶直达。城墙上的铭文砖是一大特色，已发现179种，如同石质档案。弧形马面为国内孤例，双层空心敌台为戚继光抗倭所创。城墙兼具军事防御和城市防洪功能，2019年台风利奇马期间有效减弱了洪水对古城的冲击。'
+  },
+  regions: {
+    '台州府城墙': {
+      pos: [946, 360],
+      vr: 'https://ad9ovdw3v.wasee.com/wt/ad9ovdw3v?def_sid=1767393'
+    },
+    '东湖': {
+      pos: [1450, 745],
+      vr: 'https://5a5zazkru.wasee.com/wt/5a5zazkru?def_sid=2223677'
+    },
+    '紫阳街': {
+      pos: [635, 1389],
+      vr: 'https://6695ayfhl.wasee.com/wt/6695ayfhl?def_sid=2865446'
+    }
+  },
+  currentRoute: 'A',
+  speechRate: 1.0,
+  speechEnabled: true,
+  currentUtter: null
+};
+
+const routeData = {
+  A: {
+    nodes: ['瓮城','紫阳街','西门街','朝天门','望天台','白云楼','揽胜门','东湖'],
+    desc: '【路线A · 翁城→紫阳街→西门街→朝天门→望天台→白云楼→揽胜门→东湖】\\n\n该路线串联台州府城墙与古城街区的核心精华段落。翁城位于府城西北大固山下，始建于清康熙年间，兼具御敌与防洪功能；紫阳街全长约1080米，中国历史文化名街，因道教南宗始祖张伯端（紫阳真人）得名，保留北宋里坊制格局；西门街与紫阳街交汇，保留多座明清时期坊墙，原住民生活气息浓厚；朝天门复建于宋代，瓮城始建于清康熙年间，兼具御敌与防洪功能；望天台又称天坛，元末起义领袖方国珍筑台祭天称王之地，采用"三层九循环"的汉白玉结构；白云楼位于北固山东侧，为府城墙最高点，双层重檐歇山顶结构，可远眺白云山与巾山；揽胜门为城墙主要入口之一，需攀登198级台阶（好汉坡）登顶，可俯瞰东湖全景；东湖开凿于北宋熙宁四年（1072年），南北长约500米，有"小西湖"之称，含湖心亭、半勾亭、九曲桥、骆宾王祠等景点。\n\n全程建议穿着舒适的鞋子，门票参考：台州府城墙与东湖联票70元，单买城墙60元、东湖15元，该路线也可反向游览，从东湖出发登城后多为下坡，相对省力。'
+  },
+  B: {
+    nodes: ['瓮城','紫阳街','西门街','朝天门','平海楼','镇宁门'],
+    desc: '【路线B · 翁城→紫阳街→西门街→朝天门→平海楼→镇宁门】\n\n该路线以府城西部城墙与古街巷为主，串联起古城防御体系与市井生活区，全长约4千米，游览时间约2.5小时。沿线主要景点简介如下：翁城位于府城西北大固山下，始建于清康熙年间，瓮城结构兼具军事御敌与灵江防洪双重功能；紫阳街全长约1080米，中国历史文化名街，因道教南宗始祖张伯端（紫阳真人）得名，至今保留北宋里坊制格局，街内有悟真坊、千佛井、中国人民银行台州支行旧址等历史遗迹；西门街与紫阳街交汇，保留永靖坊、清河坊等多座明清坊墙，原住民生活气息浓厚；朝天门复建于宋代，位于府城西北，瓮城始建于清康熙年间，是古城西北方向的重要关隘；平海楼位于府城西南角，古时为瞭望灵江水情、观测海潮的重要设施，兼具军事预警与水文观测功能，是台州府城防洪体系的重要组成部分；镇宁门为台州府城西南方向城门，紧邻灵江，历史上承担着重要的水陆交通与防御功能。\n\n该路线以古城墙西段与古街巷探索为主，建议穿着舒适的鞋子，沿途可品尝紫阳街的蛋清羊尾、海苔饼、麦虾等临海特色小吃。门票参考：台州府城墙与东湖联票70元，单买城墙60元，该路线无需进入东湖景区，可单买城墙门票。'
+  }
+};
+
+// ---- Helpers ----
+const $ = sel => document.querySelector(sel);
+const $$ = sel => document.querySelectorAll(sel);
+const toast = (msg) => {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2000);
+};
+
+// ---- Resources / Paths ----
+const MAP_W = 1728;
+const MAP_H = 2304;
+let mapState = { scale: 1, tx: 0, ty: 0, userTransforming: false };
+function computeInitialScale(){
+  const wrap = document.getElementById('mapWrap');
+  if(!wrap) return 1;
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  const s = Math.min(w / MAP_W, h / MAP_H);
+  return Math.max(0.8, Math.min(4, s));
+}
+function applyMapTransform(){
+  const panels = document.getElementById('mapPanels');
+  if(!panels) return;
+  panels.style.transform = `translate(-50%,-50%) translate(${mapState.tx}px, ${mapState.ty}px) scale(${mapState.scale})`;
+}
+
+// Auto slow pan (only when not user-transforming)
+let autoPanTimer = null;
+function startAutoPan(){
+  if(autoPanTimer) return;
+  let direction = 1;
+  autoPanTimer = setInterval(() => {
+    if(mapState.userTransforming) return;
+    const step = 0.5;
+    const maxOffset = 80;
+    mapState.ty += direction * step;
+    if(mapState.ty > maxOffset) direction = -1;
+    if(mapState.ty < -maxOffset) direction = 1;
+    applyMapTransform();
+  }, 80);
+}
+function stopAutoPan(){
+  if(autoPanTimer){
+    clearInterval(autoPanTimer);
+    autoPanTimer = null;
+  }
+}
+
+function seasonPrefix(){ return state.seasonMap[state.season]; }
+function mapImagePath(){ return `./Assets/Images/map/${seasonPrefix()}_map.jpg`; }
+function mapImageFallback(){ return `./Assets/Images/map/${seasonPrefix()}_map.png`; }
+function roadmapPath(route){
+  // Prefer .jpg for Summer/Autumn/other per spec; fallback to .png
+  return `./Assets/Images/roadmap/${route}/${seasonPrefix()}_${route}map.jpg`;
+}
+function roadmapFallback(route){
+  return `./Assets/Images/roadmap/${route}/${seasonPrefix()}_${route}map.png`;
+}
+function cardImg(name, idx){
+  const py = state.pinyinMap[name];
+  if(!py) return '';
+  return `./Assets/Images/card/${py}_${idx}.jpg`;
+}
+
+// ---- Navigation ----
+function goto(page){
+  if(state.page === page) return;
+  state.page = page;
+  $$('.page').forEach(p => p.classList.toggle('active', p.id === page));
+  $$('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
+  $$('.nav-item').forEach(n => n.style.setProperty('--page-color', getPageColor(page)));
+  document.documentElement.style.setProperty('--page-color', getPageColor(page));
+
+  if(page === 'home'){
+    showHomeBigTitle();
+  }
+  if(page === 'scenic'){
+    rebuildSpotLayer();
+  }
+  if(page === 'qa'){
+    startCardScroll();
+  }
+  if(page === 'trip'){
+    loadWeather();
+  }
+}
+function getPageColor(page){
+  return ({home:'#c9a14a',scenic:'#c9a14a',trip:'#c9a14a',qa:'#c9a14a'})[page];
+}
+
+$$('.nav-item').forEach(n => n.addEventListener('click', () => goto(n.dataset.page)));
+$$('.entry-btn').forEach(b => b.addEventListener('click', () => goto(b.dataset.goto)));
+
+// ---- Season ----
+function applySeason(){
+  const mapImg = document.getElementById('mapImg');
+  if(mapImg){
+    const primary = mapImagePath();
+    const fallback = mapImageFallback();
+    // Preload both and use primary; if primary fails use fallback
+    const testImg = new Image();
+    testImg.onload = () => { mapImg.style.backgroundImage = `url("${primary}")`; };
+    testImg.onerror = () => { mapImg.style.backgroundImage = `url("${fallback}")`; };
+    testImg.src = primary;
+  }
+  const qaBg = document.getElementById('qaBgImg');
+  if(qaBg){
+    const primary = mapImagePath();
+    const fallback = mapImageFallback();
+    const testImg = new Image();
+    testImg.onload = () => { qaBg.src = primary; };
+    testImg.onerror = () => { qaBg.src = fallback; };
+    testImg.src = primary;
+  }
+  updateRouteImg();
+  document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.s === state.season));
+}
+$('#seasonSwitch').addEventListener('click', e => {
+  const btn = e.target.closest('.season-btn');
+  if(!btn) return;
+  state.season = btn.dataset.s;
+  applySeason();
+});
+
+// ---- Home title fade in/out (only once per enter) ----
+let bigTitleShown = false;
+function showHomeBigTitle(){
+  const el = $('#homeBigTitle');
+  el.classList.remove('show');
+  // force reflow
+  void el.offsetWidth;
+  el.classList.add('show');
+  bigTitleShown = true;
+}
+
+// ---- Mute controls ----
+function getActiveVideos(){
+  // Q&A now uses a background image, not video
+  return [document.getElementById('homeVideo'), document.getElementById('tripVideo')].filter(v => v);
+}
+function setAllVideosMuted(muted){
+  getActiveVideos().forEach(v => { try { v.muted = muted; } catch(e){} });
+}
+function tryPlayVideo(v){
+  if(!v) return;
+  v.muted = true;
+  const p = v.play();
+  if(p !== undefined && typeof p.catch === 'function'){
+    p.catch(() => {
+      v.muted = true;
+      // try once more on first user interaction
+      const resume = () => {
+        v.play().catch(()=>{});
+        document.removeEventListener('touchstart', resume);
+        document.removeEventListener('click', resume);
+      };
+      document.addEventListener('touchstart', resume, { once: true });
+      document.addEventListener('click', resume, { once: true });
+    });
+  }
+}
+function tryPlayAll(){
+  getActiveVideos().forEach(tryPlayVideo);
+}
+function toggleMute(video){
+  state.muted = !state.muted;
+  if(state.muted){
+    setAllVideosMuted(true);
+    $('#muteBtn i').className = 'fas fa-volume-mute';
+    $('#muteBtn2 i').className = 'fas fa-volume-mute';
+    toast('🔇 已静音');
+  } else {
+    // Try unmute all
+    setAllVideosMuted(false);
+    // Also try to play all (in case any was paused due to policy)
+    getActiveVideos().forEach(v => {
+      if(!v) return;
+      v.play().catch(() => {
+        // If blocked, fallback to muted
+        v.muted = true;
+        v.play().catch(()=>{});
+        state.muted = true;
+        $('#muteBtn i').className = 'fas fa-volume-mute';
+        $('#muteBtn2 i').className = 'fas fa-volume-mute';
+        toast('🔇 浏览器限制，暂时静音');
+      });
+    });
+    $('#muteBtn i').className = 'fas fa-volume-up';
+    $('#muteBtn2 i').className = 'fas fa-volume-up';
+    if(state.muted === false) toast('🔊 声音已开启');
+  }
+}
+const homeVideo = $('#homeVideo');
+$('#muteBtn').addEventListener('click', () => toggleMute(homeVideo));
+const tripVideo = $('#tripVideo');
+$('#muteBtn2').addEventListener('click', () => toggleMute(tripVideo));
+
+// =========================================================
+// Page 2: Scenic Guide
+// =========================================================
+function rebuildSpotLayer(){
+  const layer = $('#spotLayer');
+  layer.innerHTML = '';
+
+  // Regions
+  Object.entries(state.regions).forEach(([name, info]) => {
+    const btn = document.createElement('button');
+    btn.className = 'spot-btn region';
+    btn.style.left = info.pos[0] + 'px';
+    btn.style.top = info.pos[1] + 'px';
+    btn.innerHTML = `<span class="dot"></span>${name}`;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      focusMap(info.pos[0], info.pos[1]);
+      highlightRing(info.pos[0], info.pos[1]);
+      showRegionPanel(name, info.vr);
+    });
+    layer.appendChild(btn);
+  });
+
+  // Spots
+  Object.entries(state.spotInfo).forEach(([name, info]) => {
+    const btn = document.createElement('div');
+    btn.className = 'spot-btn';
+    btn.style.left = info.pos[0] + 'px';
+    btn.style.top = info.pos[1] + 'px';
+    btn.innerHTML = `<span class="dot"></span>${name}<span class="nav-icon" title="高德地图导航"><i class="fas fa-location-arrow"></i></span>`;
+    const navIcon = btn.querySelector('.nav-icon');
+    navIcon.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.open(`https://uri.amap.com/search?keyword=${encodeURIComponent('台州府城' + name)}`, '_blank');
+    });
+    btn.addEventListener('click', (e) => {
+      if(e.target.closest('.nav-icon')) return;
+      focusMap(info.pos[0], info.pos[1]);
+      highlightRing(info.pos[0], info.pos[1]);
+      showSpotPanel(name);
+    });
+    layer.appendChild(btn);
+  });
+}
+
+// Focus map on a pixel coordinate (in 1728x2304 space)
+function focusMap(px, py){
+  mapState.userTransforming = true;
+  const wrap = $('#mapWrap');
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  // We want point (px,py) of original map to appear at center of wrap
+  // The panels' center (0,0) in transformed world aligns to wrap center
+  // A point (px, py) in panels's local coord is at (px-864, py-1152) from panels center
+  // After translate (tx, ty) + scale s, screen position = center + ((px-864) + tx) * s, ((py-1152) + ty) * s
+  // We want this to equal (w/2, h/2) => ((px-864) + tx) * s = 0 => tx = -(px - 864)
+  const s = mapState.scale;
+  const idealScale = s; // keep current zoom
+  const tx = -(px - MAP_W/2);
+  const ty = -(py - MAP_H/2);
+  // Smooth animation to new tx/ty
+  animateTransform(tx, ty, idealScale);
+}
+
+function animateTransform(tx, ty, scale){
+  const panels = $('#mapPanels');
+  if(!panels) return;
+  panels.classList.remove('auto-pan');
+  mapState.userTransforming = true;
+  panels.style.transition = 'transform .9s cubic-bezier(.4,0,.2,1)';
+  mapState.tx = tx;
+  mapState.ty = ty;
+  mapState.scale = scale;
+  applyMapTransform();
+  setTimeout(() => {
+    panels.style.transition = '';
+  }, 900);
+}
+
+function highlightRing(px, py){
+  const ring = $('#mapRing');
+  ring.style.left = px + 'px';
+  ring.style.top = py + 'px';
+  ring.classList.add('show');
+  clearTimeout(highlightRing._t);
+  highlightRing._t = setTimeout(() => ring.classList.remove('show'), 3000);
+}
+
+function showRegionPanel(name, vr){
+  const panel = $('#sidePanel');
+  $('#sideTitle').innerHTML = `<i class="fas fa-vr-cardboard"></i> ${name} · VR 体验`;
+  const speakText = state.regionSpeak[name] || '';
+  const vrs = $('#sideVRs');
+  vrs.innerHTML = `
+    <button class="vr-btn" id="openVR"><i class="fas fa-vr-cardboard"></i> 体验 VR 全景漫游</button>
+    ${speakText ? `<button class="vr-btn" id="readRegion" style="background:linear-gradient(135deg,#5c8a4e,#3d6b33);margin-top:4px;"><i class="fas fa-volume-up"></i> 语音讲解</button>` : ''}
+    <p style="margin:6px 0 0;color:#555;font-size:13px;line-height:1.7;">点击按钮即可进入沉浸式VR全景体验，感受${name}的壮丽风光。VR支持语音讲解，可在全屏模式下自由视角漫游。</p>
+  `;
+  $('#openVR').onclick = () => openVR(vr);
+  if(speakText){
+    $('#readRegion').onclick = () => readText(speakText, name);
+  }
+  panel.classList.add('show');
+  $('#spotList').innerHTML = '';
+}
+
+function showSpotPanel(name){
+  const panel = $('#sidePanel');
+  $('#sideTitle').innerHTML = `<i class="fas fa-landmark"></i> ${name}`;
+  $('#sideVRs').innerHTML = `<p style="margin:6px 0;color:#555;font-size:13px;">点击导航图标可跳转高德地图，点击图片可查看详情。</p>`;
+
+  const py = state.pinyinMap[name];
+  const img1 = cardImg(name, 1);
+  const img2 = cardImg(name, 2);
+  const imgsHTML = (py && img1) ? `
+    <div class="spot-imgs">
+      <img src="${img1}" alt="${name}" class="active">
+      <img src="${img2}" alt="${name}" onerror="this.style.display='none'">
+      <div class="carousel-dots"><span class="active" data-i="0"></span><span data-i="1"></span></div>
+    </div>` : '';
+
+  $('#spotList').innerHTML = `
+    <div class="spot-card">
+      ${imgsHTML}
+      <div class="spot-body">
+        <h4><i class="fas fa-map-pin" style="color:#c9a14a;"></i> ${name}</h4>
+        <p id="spotDesc">${state.spotInfo[name].desc}</p>
+        <div class="spot-actions">
+          <button id="btnRead"><i class="fas fa-volume-up"></i> 朗读讲解</button>
+          <button id="btnNav"><i class="fas fa-location-arrow"></i> 高德导航</button>
+        </div>
+      </div>
+    </div>`;
+
+  // Carousel
+  const dots = panel.querySelectorAll('.carousel-dots span');
+  const imgs = panel.querySelectorAll('.spot-imgs img');
+  dots.forEach((d, i) => {
+    d.addEventListener('click', () => {
+      imgs.forEach(img => img.classList.remove('active'));
+      dots.forEach(dt => dt.classList.remove('active'));
+      if(imgs[i]) imgs[i].classList.add('active');
+      d.classList.add('active');
+    });
+  });
+
+  // Auto slide
+  let cur = 0;
+  panel._slideTimer && clearInterval(panel._slideTimer);
+  if(imgs.length > 1){
+    panel._slideTimer = setInterval(() => {
+      cur = (cur + 1) % imgs.length;
+      imgs.forEach(img => img.classList.remove('active'));
+      dots.forEach(dt => dt.classList.remove('active'));
+      imgs[cur].classList.add('active');
+      if(dots[cur]) dots[cur].classList.add('active');
+    }, 3500);
+  }
+
+  // Read
+  $('#btnRead').addEventListener('click', () => {
+    readText(state.spotInfo[name].desc, name);
+  });
+  // Nav
+  $('#btnNav').addEventListener('click', () => {
+    window.open(`https://uri.amap.com/search?keyword=${encodeURIComponent('台州府城' + name)}`, '_blank');
+  });
+
+  panel.classList.add('show');
+}
+
+$('#sideClose').addEventListener('click', () => $('#sidePanel').classList.remove('show'));
+
+// ---- Map drag / zoom ----
+(function setupMapInteractions(){
+  const wrap = $('#mapWrap');
+  const img = $('#mapImg');
+  let sx=0, sy=0, startT=null, dragging=false, pinch=false, initialScale=1, scale=1, tx=0, ty=0;
+
+  const apply = () => {
+    mapState.scale = scale;
+    mapState.tx = tx;
+    mapState.ty = ty;
+    applyMapTransform();
+  };
+
+  wrap.addEventListener('mousedown', e => {
+    dragging = true;
+    mapState.userTransforming = true;
+    sx = e.clientX; sy = e.clientY;
+    startT = {t: tx, y: ty};
+    stopAutoPan();
+    const panels = document.getElementById('mapPanels');
+    if(panels) panels.style.transition = 'none';
+  });
+  window.addEventListener('mousemove', e => {
+    if(!dragging) return;
+    const dx = (e.clientX - sx) / scale;
+    const dy = (e.clientY - sy) / scale;
+    tx = startT.t + dx; ty = startT.y + dy;
+    apply();
+  });
+  window.addEventListener('mouseup', () => {
+    dragging = false;
+    const panels = document.getElementById('mapPanels');
+    if(panels) panels.style.transition = 'transform .4s';
+    // Resume auto-pan after 3 seconds of inactivity
+    mapState._panTimer && clearTimeout(mapState._panTimer);
+    mapState._panTimer = setTimeout(() => {
+      mapState.userTransforming = false;
+      startAutoPan();
+    }, 3000);
+  });
+
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    mapState.userTransforming = true;
+    mapState.userTransTimer && clearTimeout(mapState.userTransTimer);
+    mapState.userTransTimer = setTimeout(() => { mapState.userTransforming = false; }, 3000);
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    scale = Math.max(0.8, Math.min(4, scale + delta));
+    apply();
+  }, {passive:false});
+
+  // Touch: drag + pinch
+  let tStart = null;
+  wrap.addEventListener('touchstart', e => {
+    if(e.touches.length === 1){
+      tStart = {x:e.touches[0].clientX,y:e.touches[0].clientY,t:{t:tx,y:ty}};
+      dragging = true; pinch = false;
+      mapState.userTransforming = true;
+      stopAutoPan();
+      const panels = document.getElementById('mapPanels');
+      if(panels) panels.style.transition = 'none';
+    } else if(e.touches.length === 2){
+      const [a,b] = [e.touches[0],e.touches[1]];
+      initialScale = scale;
+      pinch = true; dragging = false;
+      const dx = b.clientX-a.clientX, dy = b.clientY-a.clientY;
+      state._pinchDist = Math.hypot(dx,dy);
+      state._pinchStartScale = scale;
+    }
+  }, {passive:true});
+  wrap.addEventListener('touchmove', e => {
+    if(pinch && e.touches.length === 2){
+      const [a,b] = [e.touches[0],e.touches[1]];
+      const dx = b.clientX-a.clientX, dy = b.clientY-a.clientY;
+      const d = Math.hypot(dx,dy);
+      scale = Math.max(0.8, Math.min(4, state._pinchStartScale * (d / state._pinchDist)));
+      apply();
+    } else if(dragging && e.touches.length === 1 && tStart){
+      const dx = (e.touches[0].clientX - tStart.x) / scale;
+      const dy = (e.touches[0].clientY - tStart.y) / scale;
+      tx = tStart.t.t + dx; ty = tStart.t.y + dy;
+      apply();
+    }
+  }, {passive:true});
+  wrap.addEventListener('touchend', () => {
+    dragging = false; pinch = false;
+    const panels = document.getElementById('mapPanels');
+    if(panels) panels.style.transition = 'transform .4s';
+    // Resume auto-pan after 3 seconds
+    mapState._panTimer && clearTimeout(mapState._panTimer);
+    mapState._panTimer = setTimeout(() => {
+      mapState.userTransforming = false;
+      startAutoPan();
+    }, 3000);
+  });
+})();
+
+// Hide zoom hint after a while
+setTimeout(() => { const h = $('#zoomHint'); if(h) h.style.display='none'; }, 4000);
+
+// ---- VR Modal ----
+function openVR(url){
+  const m = $('#vrModal');
+  $('#vrIframe').src = url;
+  m.classList.add('show');
+}
+$('#vrClose').addEventListener('click', () => {
+  $('#vrModal').classList.remove('show');
+  $('#vrIframe').src = 'about:blank';
+});
+$('#vrMute').addEventListener('click', () => {
+  const f = $('#vrIframe');
+  // post mute message to iframe (will work if same origin)
+  try { f.contentWindow.postMessage({type:'mute'}, '*'); } catch(e){}
+  toast('VR 静音切换（若支持）');
+});
+let subOn = true;
+$('#vrSubtitle').addEventListener('click', () => {
+  subOn = !subOn;
+  try { $('#vrIframe').contentWindow.postMessage({type:'subtitle', on: subOn}, '*'); } catch(e){}
+  toast(subOn ? '字幕开' : '字幕关');
+});
+$('#vrModal').addEventListener('click', e => {
+  if(e.target.id === 'vrModal'){
+    $('#vrModal').classList.remove('show');
+    $('#vrIframe').src = 'about:blank';
+  }
+});
+
+// =========================================================
+// Page 3: Trip Planning
+// =========================================================
+function updateRouteImg(){
+  const img = document.getElementById('routeImg');
+  if(img){
+    const primary = roadmapPath(state.currentRoute);
+    const fallback = roadmapFallback(state.currentRoute);
+    const t = new Image();
+    t.onload = () => { img.src = primary; };
+    t.onerror = () => { img.src = fallback; };
+    t.src = primary;
+  }
+  const desc = document.getElementById('routeDesc');
+  if(desc) desc.textContent = routeData[state.currentRoute].desc;
+}
+$$('.trip-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    $$('.trip-tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    const tab = t.dataset.trip;
+    $('#officialContent').style.display = tab === 'official' ? 'flex' : 'none';
+    $('#smartContent').style.display = tab === 'smart' ? 'flex' : 'none';
+    $('#routeView').style.display = tab === 'official' ? 'flex' : 'none';
+    $('#aiPlanView').style.display = tab === 'smart' ? 'flex' : 'none';
+  });
+});
+$$('.route-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    $$('.route-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.currentRoute = b.dataset.route;
+    updateRouteImg();
+    $('#routeDesc').textContent = routeData[state.currentRoute].desc;
+    $('#routeImg').style.transform = 'scale(1)';
+  });
+});
+
+// Zoom controls
+let routeScale = 1;
+$('#zoomIn').onclick = () => { routeScale = Math.min(3, routeScale + 0.2); $('#routeImg').style.transform = `scale(${routeScale})`; };
+$('#zoomOut').onclick = () => { routeScale = Math.max(0.5, routeScale - 0.2); $('#routeImg').style.transform = `scale(${routeScale})`; };
+$('#zoomReset').onclick = () => { routeScale = 1; $('#routeImg').style.transform = 'scale(1)'; };
+
+// ---- Weather ----
+async function loadWeather(dateStr){
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=28.85&longitude=121.12&current_weather=true&hourly=temperature_2m,weathercode&daily=temperature_2_max,temperature_2_min,weathercode`;
+    const r = await fetch(url);
+    const d = await r.json();
+    const iconMap = {0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'❄️',80:'🌦',81:'🌦',82:'⛈',95:'⛈',96:'⛈',99:'⛈'};
+    const w = dateStr ? (d.daily && d.daily.weathercode && d.daily.weathercode[0]) : d.current_weather.weathercode;
+    const t = dateStr
+      ? `${d.daily.temperature_2_min[0]}°C ~ ${d.daily.temperature_2_max[0]}°C`
+      : `${d.current_weather.temperature}°C`;
+    $('#weatherIcon').textContent = iconMap[w] || '☀️';
+    $('#weatherText').textContent = `${dateStr ? '今日' : '实时'}天气 · ${t}`;
+
+    // populate date options
+    const sel = $('#weatherDate');
+    if(sel.options.length <= 1){
+      const defOpt = document.createElement('option');
+      defOpt.value = ''; defOpt.textContent = '实时';
+      sel.appendChild(defOpt);
+      const today = new Date();
+      for(let i=0;i<7;i++){
+        const dt = new Date(today); dt.setDate(today.getDate()+i);
+        const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = i===0 ? '今天' : (i===1 ? '明天' : key);
+        sel.appendChild(opt);
+      }
+    }
+    if(!dateStr) sel.value = '';
+    // ensure weatherPanel visible
+    const panel = $('#weatherPanel');
+    if(panel) panel.style.display = 'flex';
+  }catch(err){
+    $('#weatherText').textContent = '天气获取失败';
+    console.error(err);
+  }
+}
+$('#weatherDate').addEventListener('change', e => {
+  const v = e.target.value;
+  if(v) loadWeather(v);
+  else loadWeather();
+});
+
+// ---- AI Trip ----
+async function generateAITrip(){
+  const btn = $('#generateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-dots"><span></span><span></span><span></span></span> 正在生成…';
+  const days = $('#daysSel').value;
+  const interest = $('#interestSel').value;
+  const company = $('#companySel').value;
+
+  // weather text
+  let weatherText = '晴朗';
+  try{
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=28.85&longitude=121.12&current_weather=true');
+    const d = await r.json();
+    weatherText = `当前台州天气：温度 ${d.current_weather.temperature}°C，天气代码 ${d.current_weather.weathercode}`;
+  }catch(e){}
+
+  const prompt = `你是台州府城文化旅游区的资深导游。请为以下旅行者设计一份详细的${days}天行程：
+- 兴趣：${interest}
+- 同行：${company}
+- 当前天气：${weatherText}
+- 季节：${seasonPrefix()}
+
+要求：
+1. 涵盖台州府城墙、东湖、紫阳街三大核心区域，以及瓮城、西门街、白云楼、望天台（天坛）、揽胜门、樵云阁、湖心亭等景点
+2. 每天按上午、下午、晚上分段，标注时间和交通建议
+3. 推荐当地特色美食（如麦虾、糟羹、乌米饭、姜汤面）
+4. 结合天气和季节给出穿搭建议
+5. 语言亲切，简洁有力，使用中文输出，Markdown格式`;
+
+  const resultEl = $('#aiPlanResult');
+  resultEl.textContent = 'AI 正在思考…';
+
+  try{
+    const key = ((typeof window !== 'undefined' && window.__AI_KEY__) || '').trim();
+    if(!key){
+      resultEl.textContent = '未能连接AI服务，请稍后再试。';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> 生成AI个性化行程';
+      return;
+    }
+    const resp = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${key}`
+      },
+      body: JSON.stringify({
+        model:'glm-4.7-flash',
+        messages:[{role:'user', content:prompt}],
+        temperature:0.7
+      })
+    });
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '未能获取结果，请稍后重试。';
+    resultEl.textContent = text;
+  }catch(err){
+    resultEl.textContent = '生成失败：' + err.message + '\n\n请检查网络和API Key配置。';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> 重新生成行程';
+}
+$('#generateBtn').addEventListener('click', generateAITrip);
+
+// =========================================================
+// Page 4: Q&A
+// =========================================================
+const presetCards = [
+  '卡片一：父子四进士，一门三巡抚。台州进士世家里，最让人叹为观止的是王宗沐家族。王宗沐是明代人，他本人是进士，他的三个儿子也全都考上了进士——父子四人，全部进士！更厉害的是，他儿子王士琦当了大同巡抚，另一个儿子王士昌当了福建巡抚，加上王宗沐自己也任巡抚，一家人分别在不同省份当巡抚，这就是历史上说的一门三巡抚。父子以清廉著称，当地百姓主动赠送万民伞表达感谢，这是古代老百姓对官员最高的赞美。更有意思的是，王宗沐的孙子王士性更厉害——他骑着驴走遍了大好河山，著有《五岳游草》，成为明代人文地理学的奠基人。从清廉官员到地理探险家，一个家族跨越几代，每一代都在各自领域发光发热，这是台州家族文化耕读传家精神最好的体现。',
+  '卡片二：日本天台宗在台州诞生的那一年。公元八〇四年，一位日本高僧搭遣唐使的船来到中国，他叫最澄。最澄是专程来取经的，他来到台州，被台州刺史陆淳亲自接待，介绍给了龙兴寺的道邃大师。道邃大师在龙兴寺的极乐净土院为最澄以及随行的二十七名中日僧侣集体授戒，讲经一百四十九天，传授的是天台宗最核心的典籍《摩诃止观》里的止观禅法。最澄回到日本之后，把在台州学到的天台宗教义带了回去，在日本开创了日本天台宗，这是八二五年的事。日本天台宗成为与真言宗并列的日本佛教两大宗派之一，对日本文化影响极其深远。一千二百年过去了，一九九八年，日本国大僧正渡边惠进程来到临海，在龙兴寺极乐净土院立了一块日本国传教大师最澄受戒灵迹石碑，把这段台州历史永久铭记。就是在这里，日本天台宗的种子发了芽。',
+  '卡片三：鉴真在台州留下了重要一站。说到台州与日本的历史联系，要从一位大家都熟悉的唐代高僧说起——鉴真。鉴真六次东渡日本，这个故事大家都知道。他第四次东渡失败后，曾在台州驻锡，在台州的龙兴寺停留，跟当地僧侣进行了深入的佛法交流，台州地方官员也热情款待了他。台州龙兴寺始建于唐神龙元年，最初叫神龙寺，神龙是唐朝武则天和唐中宗的年号，是有皇家背景的官寺。台州佛教跟天台宗渊源很深，天台宗是由隋朝智顗大师在天台山创立的，被称为中国佛教第一宗，核心修行方法是止观双修。鉴真在台州的停留是一个伏笔——后来发生的那件事，让台州在中日文化交流史上留下了更加辉煌的印记。什么事呢？就是公元八〇四年，一位日本高僧来到台州……',
+  '卡片四：一颗茶籽漂洋过海开了日本茶道。最澄从台州回日本，除了佛法，还带走了一样东西——茶籽。他把台州天台山的茶籽带到日本，种在了近江坂本，也就是今天日本的滋贺县大津市，开创了日本茶叶种植的历史。日本嵯峨天皇在最澄的影响下大力提倡饮茶，形成了历史上有名的弘仁茶风，这就奠定了日本茶文化发展的基础。今天风靡全球的日本茶道，其历史渊源之一，就在台州的这片茶山。台州本地的茶叶，最有名的是临海蟠毫，以螺旋形的茶芽和清香口感著称，二十世纪九十年代还曾出口到美国、日本和香港，挺厉害的。台州西部的羊岩山建有万亩茶叶观光园区。说起来挺神奇：台州这片土地孕育了茶，茶籽从这里飘到了日本，最后变成了一种风靡全球的文化艺术形式。台州对世界文化史的贡献，通过一颗小小的茶籽，悄悄地发挥了它的影响。',
+  '卡片五：台州人出使日本成了文学奠基人。刚才说了鉴真、最澄跟台州有关，都是跟佛教有关的故事。今天再说一位台州人去日本的故事。元代有个临海人，俗姓胡，法号一宁，还有个皇帝赐的封号叫妙慈弘济大师。元朝把他派去出使日本，一宁到了日本之后就留在那里不走了，在日本广传禅法，创立了日本禅宗一山派。但他最重要的贡献不只是传法——他还把中国的文学、书法、绘画这些文化艺术全带到了日本，成为日本五山文学的奠基人之一。五山文学是日本中世纪最重要的汉文学，一宁在这个时期发挥了开创性作用。你看，台州在中日文化交流史上有三个重要名字：鉴真在台州停留，是律宗传播的中转站；最澄在台州受戒，是日本天台宗的起点；一宁从台州出发出使日本，是日本禅宗一山派和五山文学的奠基人。这三个人，构成了台州在中日文化交流史上最辉煌的贡献。'
+];
+let cardIndex = 0;
+let cardTimer = null;
+
+function startCardScroll(){
+  const box = $('#qaCards');
+  box.innerHTML = '';
+  cardIndex = 0;
+  const initial = 3;
+  for(let i=0;i<initial;i++){
+    addCard(presetCards[cardIndex % presetCards.length], i * 30);
+    cardIndex++;
+  }
+  clearInterval(cardTimer);
+  cardTimer = setInterval(() => {
+    addCard(presetCards[cardIndex % presetCards.length], 0);
+    cardIndex++;
+  }, 3500);
+}
+function addCard(text, delay){
+  const box = $('#qaCards');
+  const card = document.createElement('div');
+  card.className = 'qa-card';
+  card.style.bottom = '-40px';
+  card.style.opacity = '0';
+  card.textContent = text;
+  box.appendChild(card);
+  requestAnimationFrame(() => {
+    card.style.transition = 'transform 1.5s linear, opacity 1.5s linear';
+    card.style.transform = `translateY(-${200 + delay}px)`;
+    card.style.opacity = '1';
+  });
+  setTimeout(() => {
+    card.classList.add('hide');
+  }, 4500 + delay);
+  setTimeout(() => card.remove(), 6200 + delay);
+}
+
+// Speech
+function readText(text, label){
+  if(!window.speechSynthesis){
+    toast('当前浏览器不支持语音合成');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-CN';
+  u.rate = state.speechRate;
+  if(!state.speechEnabled){
+    toast('语音已关闭');
+    return;
+  }
+  // Mute all videos during speech
+  setAllVideosMuted(true);
+  u.onend = () => {
+    // Restore video sound only if not manually muted
+    if(!state.muted) setAllVideosMuted(false);
+  };
+  u.onerror = () => {
+    if(!state.muted) setAllVideosMuted(false);
+  };
+  window.speechSynthesis.speak(u);
+  state.currentUtter = u;
+  if(label) toast(`正在朗读：${label}`);
+}
+
+$('#speechRate').addEventListener('input', e => {
+  state.speechRate = parseFloat(e.target.value);
+  $('#rateVal').textContent = state.speechRate.toFixed(1);
+  if(state.currentUtter){
+    state.currentUtter.rate = state.speechRate;
+  }
+});
+$('#speechToggle').addEventListener('change', e => {
+  state.speechEnabled = e.target.checked;
+  $('#speechStatus').textContent = state.speechEnabled ? '开' : '关';
+  if(!state.speechEnabled) window.speechSynthesis && window.speechSynthesis.cancel();
+});
+
+// Chat
+function getFallbackAnswer(q){
+  const qq = q || '';
+  const qa = (s, list) => list.find(k => qq.includes(k));
+  const presets = [
+    ['东湖', '东湖开凿于北宋熙宁四年（1072年），是台州府城内的一颗明珠，有"小西湖"之称。建议清晨或傍晚游览，可在九曲桥拍摄湖心亭倒影，登揽胜门可俯瞰全景。'],
+    ['紫阳街', '紫阳街全长约1080米，是中国历史文化名街。因道教南宗鼻祖张伯端（紫阳真人）得名，保留北宋里坊制格局，有悟真坊、千佛井等遗迹，可品尝蛋清羊尾、海苔饼、麦虾等特色美食。'],
+    ['城墙','台州府城墙始建于东晋，已有1600余年历史，全长4700余米。揽胜门为主要入口，有198级台阶，城墙上的铭文砖、弧形马面、双层空心敌台为其独特构造。'],
+    ['瓮城','瓮城位于古城墙临江诸城门，为半圆形围合空间。清康熙年间修建，兼具军事防御与防洪功能，能有效围剿攻入城门的敌军。'],
+    ['湖心亭','湖心亭位于东湖外湖，亭阁飞檐八出，造型空灵大气，是东湖的标志性景观。'],
+    ['白云楼','白云楼坐落于北固山东侧，是台州府城墙的最高点，双层重檐歇山顶，可远眺白云山与巾子山。'],
+    ['美食','推荐品尝台州特色小吃：蛋清羊尾、海苔饼、梅花糕、麦虾、糟羹、乌米饭、姜汤面。'],
+    ['门票','台州府城墙与东湖联票70元，单买城墙60元、东湖15元。路线B仅游览城墙可单买城墙门票。'],
+    ['推荐','推荐路线：翁城→紫阳街→西门街→朝天门→望天台→白云楼→揽胜门→东湖，约6-8小时。'],
+    ['天气','建议春秋天游览，气温宜人。可在行程规划页查看实时天气。']
+  ];
+  for(const [k,v] of presets){
+    if(qa(k, [k])) return v;
+  }
+  return '关于"'+q+'"，建议您游览台州府城文化旅游区的三大区域：紫阳街（千年历史街区）、台州府城墙（1600年古城墙）、东湖（小西湖）。可点击首页"景点导览"进入地图查看各景点详情与VR全景。';
+}
+
+async function sendQuestion(){
+  const input = $('#qaInput');
+  const q = input.value.trim();
+  if(!q) return;
+  const messages = $('#qaMessages');
+  const userMsg = document.createElement('div');
+  userMsg.className = 'qa-msg user';
+  userMsg.textContent = q;
+  messages.appendChild(userMsg);
+  input.value = '';
+  messages.scrollTop = messages.scrollHeight;
+
+  const aiMsg = document.createElement('div');
+  aiMsg.className = 'qa-msg ai typing';
+  aiMsg.textContent = '思考中';
+  messages.appendChild(aiMsg);
+  messages.scrollTop = messages.scrollHeight;
+
+  try{
+    const key = ((typeof window !== 'undefined' && window.__AI_KEY__) || '').trim();
+    if(!key){
+      aiMsg.classList.remove('typing');
+      aiMsg.textContent = '关于"'+q+'"：'+getFallbackAnswer(q);
+      return;
+    }
+    const resp = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${key}`
+      },
+      body: JSON.stringify({
+        model:'glm-4.7-flash',
+        messages:[
+          {role:'system', content:'你是台州府城文化旅游区的AI导览助手，名叫"府城小助手"。请用亲切、专业的中文回答游客关于台州府城的问题。回答简洁，有实用建议。'},
+          {role:'user', content:q}
+        ],
+        temperature:0.7
+      })
+    });
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '暂无答案，换个问题试试？';
+    aiMsg.classList.remove('typing');
+    aiMsg.textContent = text;
+    if(state.speechEnabled) readText(text);
+  }catch(err){
+    aiMsg.classList.remove('typing');
+    aiMsg.textContent = '回答失败：' + err.message;
+  }
+  messages.scrollTop = messages.scrollHeight;
+}
+$('#sendBtn').addEventListener('click', sendQuestion);
+$('#qaInput').addEventListener('keydown', e => {
+  if(e.key === 'Enter') sendQuestion();
+});
+
+// AI Key 管理 - 使用 localStorage 持久化
+// 如需设置 Key，请在浏览器控制台执行: window.__AI_KEY__ = "你的Key"
+(function initAIKey(){
+  let k = '';
+  try {
+    // 环境变量优先读取（支持 Vite/打包工具）
+    if (typeof window !== 'undefined' && window.__AI_KEY__) {
+      k = String(window.__AI_KEY__).trim();
+    }
+    // 若未设置，则尝试读取 localStorage
+    if(!k){
+      try { k = (localStorage.getItem('AI_KEY') || '').trim(); } catch(e){}
+    }
+    // 若仍为空，则使用默认内置 Key
+    if(!k){
+      k = '71541782829687972';
+      try { localStorage.setItem('AI_KEY', k); } catch(e){}
+    }
+    window.__AI_KEY__ = k;
+  } catch(e){
+    // 兜底
+    try { window.__AI_KEY__ = '71541782829687972'; } catch(e2){}
+  }
+})();
+function init(){
+  try{
+    const firstInteract = () => {
+      getActiveVideos().forEach(v => {
+        if(v){
+          v.muted = false;
+          v.play().catch(()=>{});
+        }
+      });
+      const mb = document.getElementById('muteBtn');
+      const mb2 = document.getElementById('muteBtn2');
+      if(mb) mb.querySelector('i').className = 'fas fa-volume-up';
+      if(mb2) mb2.querySelector('i').className = 'fas fa-volume-up';
+      state.muted = false;
+    };
+    const firstHandler = () => {
+      firstInteract();
+      document.removeEventListener('click', firstHandler);
+      document.removeEventListener('touchstart', firstHandler);
+      document.removeEventListener('keydown', firstHandler);
+    };
+    document.addEventListener('click', firstHandler);
+    document.addEventListener('touchstart', firstHandler);
+    document.addEventListener('keydown', firstHandler);
+
+    // Try unmuted autoplay first
+    getActiveVideos().forEach(v => {
+      if(!v) return;
+      v.muted = false;
+      const p = v.play();
+      if(p !== undefined && typeof p.catch === 'function'){
+        p.catch(() => {
+          v.muted = true;
+          v.play().catch(()=>{});
+          const mb = document.getElementById('muteBtn');
+          const mb2 = document.getElementById('muteBtn2');
+          if(mb) mb.querySelector('i').className = 'fas fa-volume-mute';
+          if(mb2) mb2.querySelector('i').className = 'fas fa-volume-mute';
+          state.muted = true;
+        });
+      }
+    });
+
+    applySeason();
+    rebuildSpotLayer();
+    showHomeBigTitle();
+    loadWeather();
+    updateRouteImg();
+
+    mapState.scale = computeInitialScale();
+    mapState.tx = 0;
+    mapState.ty = 0;
+    applyMapTransform();
+
+    setTimeout(startAutoPan, 1500);
+
+    window.addEventListener('resize', () => {
+      if(!mapState.userTransforming){
+        mapState.scale = computeInitialScale();
+        applyMapTransform();
+      }
+    });
+
+    setTimeout(() => {
+      toast('🎋 欢迎来到台州府城智慧文旅AI导览系统');
+      if(state.muted){
+        toast('💡 点击页面任意位置开启视频声音');
+      } else {
+        toast('🔊 视频声音已开启');
+      }
+    }, 800);
+  }catch(err){
+    console.error('Init error:', err);
+    toast('初始化出错：' + err.message);
+  }
+}
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+</script>
+</body>
+</html>
