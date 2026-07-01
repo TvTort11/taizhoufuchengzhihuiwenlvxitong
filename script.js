@@ -16,24 +16,25 @@ let isVoiceEnabled = false;
 let voiceRate = 1;
 let mapAutoScrollInterval = null;
 
-const spotData = {
-    '瓮城': { desc: '瓮城位于台州府城墙的西门，是古代城池防御体系的重要组成部分。瓮城呈半圆形，周长约200米，高约6米，设有内外两道城门，形成"瓮中捉鳖"之势。这里曾是抵御外敌入侵的重要防线，如今成为展示古代军事防御建筑的珍贵遗址。', pinyin: 'wengcheng' },
-    '西门街': { desc: '西门街是台州府城历史街区的重要组成部分，全长约600米，保留了大量明清时期的建筑风貌。街道两旁商铺林立，老字号店铺众多，如百年药铺、传统糕点店等。漫步其间，仿佛穿越时空，感受古城的繁华与韵味。', pinyin: 'ximenjie' },
-    '白云楼': { desc: '白云楼位于北固山之巅，始建于唐代，是台州府城的标志性建筑之一。楼高三层，飞檐翘角，气势恢宏。登楼远眺，可俯瞰整个台州府城全景，远眺东海，景色美不胜收。楼内陈列着历代文人墨客的题咏碑刻，具有很高的文化价值。', pinyin: 'baiyunlou' },
-    '天坛': { desc: '天坛位于北固山半山腰，是古代台州府城的祭祀场所。坛呈圆形，直径约30米，高约2米，四周环绕着汉白玉栏杆。每年春秋两季，地方官员都会在此举行盛大的祭祀仪式，祈求风调雨顺、国泰民安。', pinyin: 'wangtiantai' },
-    '揽胜门': { desc: '揽胜门是台州府城墙的东大门，始建于宋代，是出入古城的重要通道。城门高约10米，宽约6米，气势雄伟。登上城楼，可欣赏到东湖的秀丽风光和古城的全貌，是游客必到的景点之一。', pinyin: 'lanshengmen' },
-    '樵云阁': { desc: '樵云阁位于东湖之畔，是一座仿古楼阁建筑。阁高两层，雕梁画栋，古朴典雅。阁内展示了台州府城的历史文化资料和民间工艺品。凭栏远眺，湖光山色尽收眼底，是休闲观景的好去处。', pinyin: 'qiaoyunge' },
-    '湖心亭': { desc: '湖心亭位于东湖中央，是一座八角形的亭台建筑。亭高约10米，飞檐翘角，造型优美。亭内设有石凳石桌，供游客休息品茶。四周湖水清澈，荷花盛开，景色宜人，是东湖景区的标志性景观。', pinyin: 'huxinting' }
+// 使用spotsData.js中的数据（如果文件已加载）
+const spotData = window.spotsData || {
+    '瓮城': { description: '位于古城墙临江诸城门，为半圆形围合空间。清康熙年间修建，兼具军事防御与防洪功能，能有效围剿攻入城门的敌军。', pinyin: 'wengcheng', images: ['Assets/Images/card/wengcheng_1.jpg', 'Assets/Images/card/wengcheng_2.jpg'] },
+    '西门街': { description: '东西走向的历史老街，曾是西出府城通往杭州等地的要道。街两旁保留着明清至民国风格的建筑，店铺林立，是品味古城昔日繁华与市井烟火气的绝佳去处。', pinyin: 'ximenjie', images: ['Assets/Images/card/ximenjie_1.jpg', 'Assets/Images/card/ximenjie_2.jpg'] },
+    '白云楼': { description: '坐落于北固山东侧，是台州府城墙的最高点。此楼为双层重檐歇山顶建筑，登楼远眺，可北望白云山，南瞰巾子山，将古城与新城的壮丽风光尽收眼底。', pinyin: 'baiyunlou', images: ['Assets/Images/card/baiyunlou_1.jpg', 'Assets/Images/card/baiyunlou_2.jpg'] },
+    '天坛': { description: '位于府城墙上，是古时台州府举行祭天、祈谷等重大祭祀典礼的神圣场所，承载着深厚的历史文化底蕴。', pinyin: 'wangtiantai', images: ['Assets/Images/card/wangtiantai_1.jpg', 'Assets/Images/card/wangtiantai_2.jpg'] },
+    '揽胜门': { description: '台州府城墙东端的起点。门前有象征性的198级"好汉坡"，登上城楼"顾景楼"回望，可将东湖美景与古城风貌一览无余，是俯瞰全景的绝佳位置。', pinyin: 'lanshengmen', images: ['Assets/Images/card/lanshengmen_1.jpg', 'Assets/Images/card/lanshengmen_2.jpg'] },
+    '樵云阁': { description: '矗立于东湖之北，是全湖的最高建筑。登临此阁，四周湖光山色尽收眼底。阁名源于纪念一位为民族气节而投湖的樵夫，为美景增添了一份悲壮的历史传说。', pinyin: 'qiaoyunge', images: ['Assets/Images/card/qiaoyunge_1.jpg', 'Assets/Images/card/qiaoyunge_2.jpg'] },
+    '湖心亭': { description: '位于东湖外湖，亭阁飞檐八出，造型空灵大气。亭内悬有清代学者俞樾所题楹联，将此间"好水好山"与西湖美景相提并论，是东湖的标志性景观。', pinyin: 'huxinting', images: ['Assets/Images/card/huxinting_1.jpg', 'Assets/Images/card/huxinting_2.jpg'] }
 };
 
 const routeData = {
     'A': {
-        title: '路线A：经典一日游',
-        desc: '上午：台州府城墙 → 揽胜门 → 天坛\n中午：紫阳街品尝美食（推荐品尝蛋清羊尾、海苔饼等特色小吃）\n下午：东湖 → 湖心亭 → 白云楼\n晚上：西门街夜景，感受古城夜色魅力'
+        title: '官方推荐游线A：古城精华游',
+        desc: '路线：翁城 → 紫阳街 → 西门街 → 朝天门 → 望天台 → 白云楼 → 揽胜门 → 东湖\n\n该路线串联台州府城墙与古城街区的核心精华段落。\n\n【翁城】位于府城西北大固山下，始建于清康熙年间，兼具御敌与防洪功能。\n\n【紫阳街】全长约1080米，中国历史文化名街，因道教南宗始祖张伯端（紫阳真人）得名，保留北宋里坊制格局。\n\n【西门街】与紫阳街交汇，保留多座明清时期坊墙，原住民生活气息浓厚。\n\n【朝天门】复建于宋代，瓮城始建于清康熙年间，兼具御敌与防洪功能。\n\n【望天台】又称天坛，元末起义领袖方国珍筑台祭天称王之地，采用"三层九循环"的汉白玉结构。\n\n【白云楼】位于北固山东侧，为府城墙最高点，双层重檐歇山顶结构，可远眺白云山与巾山。\n\n【揽胜门】为城墙主要入口之一，需攀登198级台阶（好汉坡）登顶，可俯瞰东湖全景。\n\n【东湖】开凿于北宋熙宁四年（1072年），南北长约500米，有"小西湖"之称，含湖心亭、半勾亭、九曲桥、骆宾王祠等景点。\n\n【温馨提示】\n- 全程建议穿着舒适的鞋子\n- 门票参考：台州府城墙与东湖联票70元，单买城墙60元、东湖15元\n- 该路线也可反向游览，从东湖出发登城后多为下坡，相对省力'
     },
     'B': {
-        title: '路线B：深度文化游',
-        desc: '上午：紫阳街历史街区 → 西门街 → 瓮城\n中午：府城特色餐厅用餐\n下午：东湖公园 → 樵云阁 → 湖心亭\n晚上：登白云楼观赏日落，俯瞰古城夜景'
+        title: '官方推荐游线B：古城墙西段探秘',
+        desc: '路线：翁城 → 紫阳街 → 西门街 → 朝天门 → 平海楼 → 镇宁门\n\n该路线以府城西部城墙与古街巷为主，串联起古城防御体系与市井生活区，全长约4千米，游览时间约2.5小时。\n\n【翁城】位于府城西北大固山下，始建于清康熙年间，瓮城结构兼具军事御敌与灵江防洪双重功能。\n\n【紫阳街】全长约1080米，中国历史文化名街，因道教南宗始祖张伯端（紫阳真人）得名，至今保留北宋里坊制格局，街内有悟真坊、千佛井、中国人民银行台州支行旧址等历史遗迹。\n\n【西门街】与紫阳街交汇，保留永靖坊、清河坊等多座明清坊墙，原住民生活气息浓厚。\n\n【朝天门】复建于宋代，位于府城西北，瓮城始建于清康熙年间，是古城西北方向的重要关隘。\n\n【平海楼】位于府城西南角，古时为瞭望灵江水情、观测海潮的重要设施，兼具军事预警与水文观测功能，是台州府城防洪体系的重要组成部分。\n\n【镇宁门】为台州府城西南方向城门，紧邻灵江，历史上承担着重要的水陆交通与防御功能。\n\n【温馨提示】\n- 该路线以古城墙西段与古街巷探索为主，建议穿着舒适的鞋子\n- 沿途可品尝紫阳街的蛋清羊尾、海苔饼、麦虾等临海特色小吃\n- 门票参考：台州府城墙与东湖联票70元，单买城墙60元\n- 该路线无需进入东湖景区，可单买城墙门票'
     }
 };
 
@@ -329,12 +330,20 @@ function openSpotModal(spot) {
     
     if (!modal || !data) return;
     
-    document.getElementById('spot-title').textContent = spot;
-    document.getElementById('spot-desc').textContent = data.desc;
+    document.getElementById('spot-title').textContent = data.name || spot;
+    // 使用description字段（新数据结构）或desc字段（旧数据结构）
+    const description = data.description || data.desc || '';
+    document.getElementById('spot-desc').textContent = description;
     
-    const pinyin = data.pinyin;
-    document.getElementById('spot-img-1').src = `Assets/images/card/${pinyin}_1.jpg`;
-    document.getElementById('spot-img-2').src = `Assets/images/card/${pinyin}_2.jpg`;
+    // 使用images数组中的路径，如果没有则使用pinyin拼接
+    if (data.images && data.images.length >= 2) {
+        document.getElementById('spot-img-1').src = data.images[0];
+        document.getElementById('spot-img-2').src = data.images[1];
+    } else {
+        const pinyin = data.pinyin;
+        document.getElementById('spot-img-1').src = `Assets/images/card/${pinyin}_1.jpg`;
+        document.getElementById('spot-img-2').src = `Assets/images/card/${pinyin}_2.jpg`;
+    }
     
     document.getElementById('spot-img-1').style.display = 'block';
     document.getElementById('spot-img-2').style.display = 'none';
@@ -401,7 +410,9 @@ function toggleAudio() {
             const data = spotData[currentSpot];
             if (!data) return;
             
-            speechUtterance = new SpeechSynthesisUtterance(data.desc);
+            // 使用description字段（新数据结构）或desc字段（旧数据结构）
+            const description = data.description || data.desc || '';
+            speechUtterance = new SpeechSynthesisUtterance(description);
             speechUtterance.rate = voiceRate;
             speechUtterance.lang = 'zh-CN';
             
@@ -462,9 +473,12 @@ function toggleSubtitle() {
     
     if (!subtitle || !btn || !currentSpot) return;
     
+    const data = spotData[currentSpot];
+    const description = data.description || data.desc || '';
+    
     if (subtitle.style.display === 'none' || subtitle.style.display === '') {
         subtitle.style.display = 'block';
-        subtitle.textContent = spotData[currentSpot].desc;
+        subtitle.textContent = description;
         btn.textContent = '隐藏字幕';
     } else {
         subtitle.style.display = 'none';
