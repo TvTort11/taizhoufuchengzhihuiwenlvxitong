@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>台州府城 · 智慧文旅AI导览系统</title>
+<style>
+:root{
+  --page-color:#ffb347;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;color:#fff;background:#111;user-select:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img,video{display:block;max-width:100%;user-select:none}
+
+#app{position:fixed;inset:0;overflow:hidden;padding-bottom:60px}
+.page{position:absolute;inset:0;display:none;overflow:hidden}
+.page.active{display:block}
+.page-bg-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.page-mask{position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:1;pointer-events:none}
+.page-content{position:relative;z-index:2;width:100%;height:100%;overflow:auto}
+.page-content::-webkit-scrollbar{display:none}
+
+/* ===== Bottom Nav ===== */
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;height:60px;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);display:flex;z-index:999;border-top:1px solid rgba(255,255,255,.15)}
+.bottom-nav .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#aaa;font-size:12px;gap:3px;transition:color .2s}
+.bottom-nav .nav-item .icon{font-size:20px}
+.bottom-nav .nav-item.active{color:var(--page-color)}
+
+/* ===== Common Controls ===== */
+.season-switch{position:fixed;top:15px;left:50%;transform:translateX(-50%);z-index:500;display:flex;gap:6px;background:rgba(0,0,0,.6);border-radius:30px;padding:6px 14px;backdrop-filter:blur(8px)}
+.season-switch span{cursor:pointer;padding:4px 12px;border-radius:20px;color:#ddd;font-size:14px;transition:all .2s}
+.season-switch span.active{background:var(--page-color);color:#222;font-weight:bold}
+.mute-btn{position:fixed;top:15px;right:15px;z-index:500;height:36px;padding:0 14px;border-radius:18px;background:rgba(0,0,0,.6);color:#fff;font-size:13px;display:flex;align-items:center;gap:4px}
+.mute-btn.muted{opacity:.7}
+
+/* ===== Page 1: Home ===== */
+.home-title-float{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);z-index:5;font-size:42px;font-weight:bold;text-shadow:0 4px 20px rgba(0,0,0,.8);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 1.2s ease}
+.home-title-float.show{opacity:1}
+.home-hero-mask{position:absolute;top:28%;left:50%;transform:translate(-50%,-50%);font-size:32px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.8);letter-spacing:4px;font-weight:300;white-space:nowrap}
+.home-entry-btns{position:absolute;bottom:120px;left:0;right:0;display:flex;justify-content:center;gap:20px;flex-wrap:wrap;padding:0 20px;z-index:5}
+.home-entry-btns .entry-btn{padding:14px 28px;background:rgba(255,179,71,.92);color:#222;font-size:17px;font-weight:bold;border-radius:30px;box-shadow:0 6px 20px rgba(0,0,0,.4);transition:transform .2s}
+.home-entry-btns .entry-btn:hover{transform:translateY(-3px)}
+.home-entry-btns .entry-btn.alt{background:rgba(255,255,255,.88)}
+
+/* ===== Page 2: Scenic Map ===== */
+.map-wrap{position:absolute;inset:0;background:#000;cursor:grab;overflow:hidden}
+.map-wrap.grabbing{cursor:grabbing}
+.map-img{position:absolute;top:0;left:0;transform-origin:0 0;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.map-btns{position:absolute;top:15px;right:15px;z-index:10;display:flex;flex-direction:column;gap:8px}
+.map-btns button{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:20px;font-weight:bold}
+
+.atts{position:absolute;top:0;left:0;pointer-events:none;width:0;height:0}
+.att-btn{position:absolute;width:32px;height:32px;margin-left:-16px;margin-top:-16px;border-radius:50%;background:#ffb347;color:#222;font-weight:bold;font-size:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.5);pointer-events:auto;transition:transform .2s}
+.att-btn.big{width:40px;height:40px;margin-left:-20px;margin-top:-20px;font-size:13px;background:#ff4d4f;color:#fff}
+.att-btn .pin{position:absolute;top:30px;right:-22px;width:22px;height:22px;border-radius:50%;background:#fff;color:#e60012;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.5);cursor:pointer}
+.att-label{position:absolute;top:34px;left:50%;transform:translateX(-50%);white-space:nowrap;color:#fff;font-size:11px;text-shadow:0 1px 3px rgba(0,0,0,.95);pointer-events:none;font-weight:bold}
+.att-btn.big .att-label{top:42px}
+
+/* ===== Modal ===== */
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
+.modal-mask.show{display:flex}
+.modal{width:100%;max-width:420px;background:#1c1c1c;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);max-height:90vh;display:flex;flex-direction:column;position:relative}
+.modal-close{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;font-size:18px;z-index:10}
+.modal-carousel{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;background:#000}
+.modal-carousel img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s}
+.modal-carousel img.active{opacity:1}
+.modal-carousel .dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
+.modal-carousel .dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.5);transition:background .3s}
+.modal-carousel .dots span.active{background:#fff}
+.modal-body{padding:18px;overflow-y:auto;flex:1;max-height:50vh}
+.modal-body h2{color:var(--page-color);margin-bottom:10px;font-size:22px}
+.modal-body p{line-height:1.8;font-size:14px;color:#ddd;margin-bottom:6px}
+.modal-actions{display:flex;gap:10px;padding:12px 18px 18px}
+.modal-actions button{flex:1;padding:12px 8px;border-radius:25px;font-weight:bold;font-size:13px}
+.modal-actions .speak{background:var(--page-color);color:#222}
+.modal-actions .nav-btn{background:#3b82f6;color:#fff}
+.modal-actions .vr{background:#10b981;color:#fff}
+
+/* ===== Page 3: Itinerary ===== */
+.itin-wrap{display:flex;min-height:100%}
+.itin-left{width:220px;background:rgba(0,0,0,.55);padding:20px 10px;flex-shrink:0}
+.itin-left h3{color:var(--page-color);font-size:14px;margin-bottom:12px}
+.itin-left .tab{display:block;width:100%;padding:12px;margin-bottom:8px;color:#ddd;border-radius:10px;font-size:14px;text-align:left}
+.itin-left .tab.active{background:var(--page-color);color:#222}
+.itin-left .sub{padding:8px 14px;font-size:12px;color:#aaa;display:block;border-radius:6px;cursor:pointer;text-align:left}
+.itin-left .sub.active{color:var(--page-color);background:rgba(255,255,255,.08)}
+.itin-right{flex:1;padding:60px 20px 20px;overflow:auto;position:relative}
+.weather-box{position:fixed;top:15px;right:70px;background:rgba(0,0,0,.65);padding:8px 14px;border-radius:12px;z-index:500;font-size:13px;text-align:center;min-width:100px}
+.weather-box .t{font-size:18px;font-weight:bold;color:var(--page-color)}
+.itin-route{background:rgba(0,0,0,.5);border-radius:14px;padding:16px;margin-bottom:16px}
+.itin-route h4{color:var(--page-color);margin-bottom:10px;font-size:15px}
+.itin-route img{width:100%;max-height:480px;object-fit:contain;background:rgba(255,255,255,.08);border-radius:8px;cursor:zoom-in}
+.itin-route .steps{margin-top:12px;font-size:13px;color:#ddd;line-height:2}
+.itin-route .steps span{display:inline-block;background:rgba(255,179,71,.2);color:var(--page-color);padding:2px 10px;border-radius:10px;margin:2px}
+.itin-form{background:rgba(0,0,0,.5);border-radius:14px;padding:20px}
+.itin-form label{display:block;font-size:13px;color:#ccc;margin-bottom:6px;margin-top:12px}
+.itin-form input,.itin-form select{width:100%;padding:10px 12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-size:14px;font-family:inherit}
+.itin-form button{width:100%;margin-top:16px;padding:12px;background:var(--page-color);color:#222;font-weight:bold;border-radius:25px}
+.itin-result{margin-top:16px;background:rgba(255,255,255,.08);border-radius:10px;padding:16px;line-height:1.8;font-size:14px;white-space:pre-wrap;color:#eee;min-height:80px}
+
+/* ===== Page 4: AI Chat ===== */
+.chat-wrap{display:flex;flex-direction:column;height:100%;padding:60px 15px 15px;gap:10px}
+.cards-row{display:flex;gap:10px;overflow-x:auto;padding:2px 4px 8px}
+.cards-row::-webkit-scrollbar{display:none}
+.ai-card{flex:0 0 180px;height:110px;background:linear-gradient(135deg,rgba(255,179,71,.92),rgba(230,126,34,.92));border-radius:12px;padding:12px 12px 12px;color:#222;font-weight:bold;font-size:14px;position:relative;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,.4);cursor:pointer}
+.ai-card.c2{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.ai-card.c3{background:linear-gradient(135deg,#11998e,#38ef7d);color:#111}
+.ai-card.c4{background:linear-gradient(135deg,#ee0979,#ff6a00);color:#fff}
+.ai-card.c5{background:linear-gradient(135deg,#2193b0,#6dd5ed);color:#111}
+.ai-card .title{font-size:14px;z-index:2;position:relative;font-weight:bold;margin-bottom:6px}
+.ai-card .scroller{position:absolute;left:12px;right:12px;top:38px;bottom:6px;overflow:hidden;border-radius:4px}
+.ai-card .scroller .inner{position:absolute;width:100%;animation:scrollUp 14s linear infinite;font-size:11px;font-weight:normal;line-height:1.55}
+.ai-card .scroller .inner p{margin:0 0 3px 0}
+@keyframes scrollUp{0%{top:0}100%{top:-100%}}
+
+.girl-wrap{display:flex;justify-content:center;margin:0;flex-shrink:0}
+.girl-wrap video{width:100px;height:100px;object-fit:contain}
+
+.chat-box{flex:1;background:rgba(0,0,0,.5);border-radius:14px;padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:120px}
+.chat-msg{max-width:82%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.chat-msg.user{align-self:flex-end;background:var(--page-color);color:#222;border-bottom-right-radius:4px}
+.chat-msg.ai{align-self:flex-start;background:rgba(255,255,255,.12);color:#fff;border-bottom-left-radius:4px}
+.chat-msg.ai .typing{display:inline-block;width:6px;height:6px;background:#fff;border-radius:50%;margin:0 2px;animation:typing 1s infinite}
+.chat-msg.ai .typing:nth-child(2){animation-delay:.2s}
+.chat-msg.ai .typing:nth-child(3){animation-delay:.4s}
+@keyframes typing{0%,60%,100%{opacity:.3}30%{opacity:1}}
+
+.chat-input-row{display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.55);border-radius:25px;padding:6px 6px 6px 12px;flex-shrink:0}
+.chat-input-row .voice-toggle{display:flex;gap:4px}
+.chat-input-row .voice-toggle button{padding:4px 8px;border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font-size:11px}
+.chat-input-row .voice-toggle button.on{background:var(--page-color);color:#222}
+.chat-input-row input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:14px;padding:6px 0}
+.chat-input-row input::placeholder{color:#888}
+.chat-input-row button.send{padding:10px 16px;background:var(--page-color);color:#222;font-weight:bold;border-radius:18px;font-size:13px}
+
+/* ===== Toast ===== */
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:2000;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+
+/* ===== Responsive ===== */
+@media (max-width:768px){
+  .season-switch span{padding:3px 8px;font-size:12px}
+  .home-hero-mask{font-size:20px;white-space:normal;text-align:center}
+  .home-title-float{font-size:26px}
+  .home-entry-btns{gap:10px}
+  .home-entry-btns .entry-btn{padding:10px 18px;font-size:14px}
+  .att-btn{width:26px;height:26px;margin-left:-13px;margin-top:-13px;font-size:10px}
+  .att-btn.big{width:34px;height:34px;margin-left:-17px;margin-top:-17px;font-size:12px}
+  .att-btn .pin{width:18px;height:18px;font-size:11px;right:-18px;top:26px}
+  .itin-wrap{flex-direction:column}
+  .itin-left{width:100%;display:flex;overflow-x:auto;padding:10px}
+  .itin-left h3{display:none}
+  .itin-left .tab{flex:0 0 auto;margin:0 6px 0 0}
+  .itin-left .sub{white-space:nowrap;flex:0 0 auto;margin:0 6px 0 0}
+  .ai-card{flex:0 0 150px;height:100px}
+  .bottom-nav .nav-item{font-size:11px}
+  .bottom-nav .nav-item .icon{font-size:17px}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+<!-- ============ Page 1: Home ============ -->
+<section class="page active" id="page-home">
+  <video class="page-bg-video" id="bgVideoHome" src="./Assets/video/bj.mp4" autoplay loop playsinline></video>
+  <div class="page-mask"></div>
+  <div class="season-switch" id="seasonSwitch">
+    <span data-season="Spring">春</span>
+    <span data-season="Summer" class="active">夏</span>
+    <span data-season="Autumn">秋</span>
+    <span data-season="Winter">冬</span>
+  </div>
+  <button class="mute-btn" id="muteBtnHome">🔊 有声</button>
+
+  <div class="page-content" style="display:flex;align-items:center;justify-content:center">
+    <div class="home-hero-mask">台州府城文化旅游区</div>
+    <div class="home-title-float" id="homeFloatTitle">台州府城旅游区</div>
+    <div class="home-entry-btns">
+      <button class="entry-btn" data-goto="scenic">🗺️ 景点导览</button>
+      <button class="entry-btn alt" data-goto="itinerary">📅 行程规划</button>
+      <button class="entry-btn" data-goto="ai">🤖 智能问答</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Page 2: Scenic Map ============ -->
+<section class="page" id="page-scenic">
+  <div class="map-wrap" id="mapWrap">
+    <img class="map-img" id="mapImg" src="./Assets/images/map/Summer_map.png" alt="map" />
+    <div class="atts" id="attLayer"></div>
+    <div class="map-btns">
+      <button id="zoomInBtn" title="放大">＋</button>
+      <button id="zoomOutBtn" title="缩小">−</button>
+      <button id="resetBtn" title="复位">⟲</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Page 3: Itinerary ============ -->
+<section class="page" id="page-itinerary">
+  <video class="page-bg-video" id="bgVideoItin" src="./Assets/video/bj.mp4" autoplay loop playsinline></video>
+  <div class="page-mask"></div>
+  <div class="season-switch" id="seasonSwitch2">
+    <span data-season="Spring">春</span>
+    <span data-season="Summer" class="active">夏</span>
+    <span data-season="Autumn">秋</span>
+    <span data-season="Winter">冬</span>
+  </div>
+  <button class="mute-btn" id="muteBtnItin">🔊 有声</button>
+  <div class="weather-box" id="weatherBox">
+    <div style="font-size:11px;color:#aaa">当前天气</div>
+    <div class="t" id="weatherTemp">--℃</div>
+    <div id="weatherDesc" style="font-size:12px">加载中...</div>
+  </div>
+
+  <div class="page-content">
+    <div class="itin-wrap">
+      <div class="itin-left">
+        <h3>推荐</h3>
+        <button class="tab active" data-group="official">📌 官方推荐</button>
+        <button class="tab" data-group="smart">✨ 智能推荐</button>
+        <h3 style="margin-top:16px">官方路线</h3>
+        <button class="sub active" data-route="A">A 路线（精华一日）</button>
+        <button class="sub" data-route="B">B 路线（深度文化）</button>
+      </div>
+      <div class="itin-right">
+        <div id="officialPanel">
+          <div class="itin-route" id="routeA">
+            <h4>A 路线：瓮城→紫阳街→西门街→朝天门→望天台→白云楼→揽胜门→东湖</h4>
+            <img class="zoomable" id="routeAImg" src="./Assets/images/roadmap/A/Summer_Amap.jpg" alt="A路线" />
+            <div class="steps" id="routeASteps"></div>
+            <p style="margin-top:10px;font-size:13px;line-height:1.7;color:#ddd">
+              💡 该路线串联台州府城墙与古城街区的核心精华段落。全程建议穿着舒适的鞋子。<br>
+              🎫 门票参考：台州府城墙与东湖联票70元，单买城墙60元、东湖15元。<br>
+              🔄 该路线也可反向游览，从东湖出发登城后多为下坡，相对省力。
+            </p>
+          </div>
+          <div class="itin-route" id="routeB" style="display:none">
+            <h4>B 路线：瓮城→紫阳街→西门街→朝天门→平海楼→镇宁门</h4>
+            <img class="zoomable" id="routeBImg" src="./Assets/images/roadmap/B/Summer_Bmap.jpg" alt="B路线" />
+            <div class="steps" id="routeBSteps"></div>
+            <p style="margin-top:10px;font-size:13px;line-height:1.7;color:#ddd">
+              💡 该路线以府城西部城墙与古街巷为主，串联起古城防御体系与市井生活区，全长约4千米，游览时间约2.5小时。<br>
+              👟 建议穿着舒适的鞋子，沿途可品尝紫阳街的蛋清羊尾、海苔饼、麦虾等临海特色小吃。<br>
+              🎫 门票参考：台州府城墙与东湖联票70元，单买城墙60元，该路线无需进入东湖景区。
+            </p>
+          </div>
+        </div>
+
+        <div id="smartPanel" style="display:none">
+          <div class="itin-form">
+            <h3 style="color:var(--page-color);margin-bottom:8px;font-size:16px">✨ AI 智能行程规划</h3>
+            <label>游玩天数</label>
+            <select id="inDays">
+              <option value="1">1 天</option>
+              <option value="2">2 天</option>
+              <option value="3" selected>3 天</option>
+              <option value="5">5 天</option>
+            </select>
+            <label>兴趣类型</label>
+            <select id="inInterest">
+              <option>历史文化</option>
+              <option>古建筑</option>
+              <option>美食小吃</option>
+              <option>摄影打卡</option>
+              <option>亲子游玩</option>
+              <option>自然山水</option>
+            </select>
+            <label>同行人员</label>
+            <input id="inPeople" placeholder="如：2大1小" value="2大1小" />
+            <button id="genItinBtn">🤖 生成智能行程</button>
+          </div>
+          <div class="itin-result" id="itinResult">请点击上方按钮生成行程…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Page 4: AI Chat ============ -->
+<section class="page" id="page-ai">
+  <video class="page-bg-video" id="bgVideoAi" src="./Assets/video/bj.mp4" autoplay loop playsinline></video>
+  <div class="page-mask"></div>
+  <button class="mute-btn" id="muteBtnAi">🔊 有声</button>
+
+  <div class="page-content">
+    <div class="chat-wrap">
+      <div class="cards-row">
+        <div class="ai-card" data-q="台州父子四进士一门三巡抚的故事">
+          <div class="title">📜 父子四进士</div>
+          <div class="scroller"><div class="inner">
+            <p>父子四进士，一门三巡抚。</p>
+            <p>台州进士世家里最让人叹为观止的是王宗沐家族。</p>
+            <p>王宗沐是明代人，他本人是进士，</p>
+            <p>他的三个儿子也全都考上了进士，父子四人全部进士。</p>
+            <p>儿子王士琦当了大同巡抚，</p>
+            <p>另一个儿子王士昌当了福建巡抚，</p>
+            <p>加上王宗沐自己也任巡抚，</p>
+            <p>一家人分别在不同省份当巡抚，</p>
+            <p>这就是历史上说的"一门三巡抚"。</p>
+          </div></div>
+        </div>
+        <div class="ai-card c2" data-q="日本天台宗是如何在台州诞生的？">
+          <div class="title">⛩️ 日本天台宗</div>
+          <div class="scroller"><div class="inner">
+            <p>公元八〇四年，一位日本高僧搭遣唐使的船来到中国，</p>
+            <p>他叫最澄。最澄来到台州，</p>
+            <p>被台州刺史陆淳亲自接待，</p>
+            <p>介绍给了龙兴寺的道邃大师。</p>
+            <p>道邃大师在龙兴寺的极乐净土院</p>
+            <p>为最澄以及随行的27名中日僧侣集体授戒，</p>
+            <p>传授天台宗最核心的典籍。</p>
+            <p>最澄回到日本之后，在日本开创了日本天台宗。</p>
+          </div></div>
+        </div>
+        <div class="ai-card c3" data-q="鉴真与台州的缘分">
+          <div class="title">🙏 鉴真东渡</div>
+          <div class="scroller"><div class="inner">
+            <p>鉴真在台州留下了重要一站。</p>
+            <p>鉴真六次东渡日本，第四次东渡失败后，</p>
+            <p>曾在台州驻锡，在台州的龙兴寺停留，</p>
+            <p>跟当地僧侣进行了深入的佛法交流。</p>
+            <p>台州龙兴寺始建于唐神龙元年，</p>
+            <p>是有皇家背景的官寺。</p>
+            <p>鉴真在台州的停留是一个伏笔，</p>
+            <p>后来公元八〇四年，日本高僧最澄来到台州，</p>
+            <p>让台州在中日文化交流史上留下了更加辉煌的印记。</p>
+          </div></div>
+        </div>
+        <div class="ai-card c4" data-q="一颗茶籽如何漂洋过海开启日本茶道？">
+          <div class="title">🍵 茶籽传日</div>
+          <div class="scroller"><div class="inner">
+            <p>最澄从台州回日本，除了佛法，</p>
+            <p>还带走了一样东西——茶籽。</p>
+            <p>他把台州天台山的茶籽带到日本，</p>
+            <p>开创了日本茶叶种植的历史。</p>
+            <p>今天风靡全球的日本茶道，</p>
+            <p>其历史渊源之一就在台州的这片茶山。</p>
+            <p>台州本地的茶叶最有名的是临海蟠毫。</p>
+          </div></div>
+        </div>
+        <div class="ai-card c5" data-q="台州人与日本五山文学的渊源">
+          <div class="title">📖 一山派</div>
+          <div class="scroller"><div class="inner">
+            <p>台州人出使日本成了文学奠基人。</p>
+            <p>元代有个临海人，法号一宁，</p>
+            <p>元朝把他派去出使日本，一宁到了日本之后</p>
+            <p>就留在那里不走了，在日本广传禅法，</p>
+            <p>创立了日本禅宗一山派。</p>
+            <p>他还把中国的文学、书法、绘画</p>
+            <p>这些文化艺术全带到了日本，</p>
+            <p>成为日本五山文学的奠基人之一。</p>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="girl-wrap">
+        <video src="./Assets/video/girl.mp4" autoplay loop playsinline muted></video>
+      </div>
+
+      <div class="chat-box" id="chatBox"></div>
+
+      <div class="chat-input-row">
+        <div class="voice-toggle">
+          <button id="rateBtn" title="调节语速">1.0x</button>
+          <button id="voiceBtn" class="on" title="开启/关闭语音">🔊开</button>
+        </div>
+        <input id="chatInput" placeholder="请输入您想了解的问题..." />
+        <button class="send" id="sendBtn">发送</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Attraction Modal ============ -->
+<div class="modal-mask" id="attModal">
+  <div class="modal">
+    <button class="modal-close" id="modalClose">✕</button>
+    <div class="modal-carousel" id="modalCarousel"></div>
+    <div class="modal-body">
+      <h2 id="modalTitle">景点名</h2>
+      <p id="modalDesc">介绍文本…</p>
+    </div>
+    <div class="modal-actions">
+      <button class="nav-btn" id="modalNav">📍 导航</button>
+      <button class="speak" id="modalSpeak">🔊 朗读</button>
+      <button class="vr" id="modalVr" style="display:none">🎥 VR</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Nav (唯一导航) -->
+<nav class="bottom-nav">
+  <button class="nav-item active" data-page="home"><span class="icon">🏠</span><span>首页</span></button>
+  <button class="nav-item" data-page="scenic"><span class="icon">🗺️</span><span>景点导览</span></button>
+  <button class="nav-item" data-page="itinerary"><span class="icon">📅</span><span>行程规划</span></button>
+  <button class="nav-item" data-page="ai"><span class="icon">🤖</span><span>智能问答</span></button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+</div>
+
+<script>
+/* ============================================================
+ * 配置
+ * ============================================================ */
+const MAP_W = 1728;
+const MAP_H = 2304;
+
+const ATTRACTIONS = {
+  wengcheng:   {name:'瓮城',   x:870,  y:1823, imgs:['wengcheng_1','wengcheng_2'],
+    desc:'瓮城：位于古城墙临江诸城门，为半圆形围合空间。清康熙年间修建，兼具军事防御与防洪功能，能有效围剿攻入城门的敌军。'
+  },
+  ximenjie:    {name:'西门街', x:870,  y:1110, imgs:['ximenjie_1','ximenjie_2'],
+    desc:'西门街：东西走向的历史老街，曾是西出府城通往杭州等地的要道。街两旁保留着明清至民国风格的建筑，店铺林立，是品味古城昔日繁华与市井烟火气的绝佳去处。'
+  },
+  baiyunlou:   {name:'白云楼', x:1151, y:213,  imgs:['baiyunlou_1','baiyunlou_2'],
+    desc:'白云楼：坐落于北固山东侧，是台州府城墙的最高点。此楼为双层重檐歇山顶建筑，登楼远眺，可北望白云山，南瞰巾子山，将古城与新城的壮丽风光尽收眼底。'
+  },
+  wangtiantai: {name:'天坛',   x:486,  y:595,  imgs:['wangtiantai_1','wangtiantai_2'],
+    desc:'天坛：即望天台，位于府城墙上。是古时台州府举行祭天、祈谷等重大祭祀典礼的神圣场所，承载着深厚的历史文化底蕴。'
+  },
+  lanshengmen: {name:'揽胜门', x:1286, y:546,  imgs:['lanshengmen_1','lanshengmen_2'],
+    desc:'揽胜门：台州府城墙东端的起点。门前有象征性的198级好汉坡，登上城楼顾景楼回望，可将东湖美景与古城风貌一览无余，是俯瞰全景的绝佳位置。'
+  },
+  qiaoyunge:   {name:'樵云阁', x:1376, y:852,  imgs:['qiaoyunge_1','qiaoyunge_2'],
+    desc:'樵云阁：矗立于东湖之北，是全湖的最高建筑。登临此阁，四周湖光山色尽收眼底。阁名源于纪念一位为民族气节而投湖的樵夫，为美景增添了一份悲壮的历史传说。'
+  },
+  huxinting:   {name:'湖心亭', x:1389, y:913,  imgs:['huxinting_1','huxinting_2'],
+    desc:'湖心亭：位于东湖外湖，亭阁飞檐八出，造型空灵大气。亭内悬有清代学者俞樾所题楹联，将此间好水好山与西湖美景相提并论，是东湖的标志性景观。'
+  }
+};
+
+const BIG_ATTRACTIONS = {
+  wall: {name:'台州府城墙', x:946,  y:360,
+    desc:'台州府城墙：始建于东晋，距今已有1600余年历史，现存全长4700余米。古建筑学家罗哲文誉其为北京八达岭等长城的师范和蓝本。城墙沿北固山山脊蜿蜒至灵江东岸，揽胜门是主要入口，有198级台阶直达。城墙上的铭文砖已发现179种，包含永保万安等吉语。独特构造有弧形马面，以及双层空心敌台。城墙兼具军事防御和城市防洪功能，2019年台风利奇马期间有效减弱了洪水冲击。相传唐代修筑百步峻时，曾因雪中灵鹿足迹找到最佳路线，临海因此得名鹿城。',
+    vr:'https://ad9ovdw3v.wasee.com/wt/ad9ovdw3v?def_sid=1767393'
+  },
+  donghu:{name:'东湖', x:1450, y:745,
+    desc:'东湖：因位于台州府城墙东侧而得名，南北长约500米，东西宽约150米。清代文人俞樾曾赞誉杭州有西湖，台州有东湖，东湖之胜，小西湖也。前身是北宋初年的水军营，后由郡守钱暄于熙宁四年开凿成湖。分为前湖和后湖，有台州园林之首的美誉。主要景点包括湖心亭、半勾亭、九曲桥，以及骆宾王祠。在九曲桥正中间可拍摄亭台倒影，从北固山揽胜门可俯拍东湖全景。',
+    vr:'https://5a5zazkru.wasee.com/wt/5a5zazkru?def_sid=2223677'
+  },
+  ziyangjie:{name:'紫阳街', x:635, y:1389,
+    desc:'紫阳街：全长约1080米，是台州府城的主干道，至今仍保持着北宋时期的里坊制格局。中国历史文化名街，入选第一批浙江省非遗主题街区，2025年入选新一批国家级旅游休闲街区。古街上有悟真坊、顺政坊等坊墙，以及千佛井、中国人民银行台州支行旧址等历史遗迹。街区展示有剪纸、草编、黄沙狮子等20余项非遗。特色美食有蛋清羊尾、海苔饼、梅花糕、麦虾、糟羹等。古街因道教南宗鼻祖张伯端（紫阳真人）得名。',
+    vr:'https://6695ayfhl.wasee.com/wt/6695ayfhl?def_sid=2865446'
+  }
+};
+
+const ROUTE_A_STEPS = ['瓮城','紫阳街','西门街','朝天门','望天台','白云楼','揽胜门','东湖'];
+const ROUTE_B_STEPS = ['瓮城','紫阳街','西门街','朝天门','平海楼','镇宁门'];
+
+/* ============================================================
+ * 工具函数
+ * ============================================================ */
+const $ = (s,el=document) => el.querySelector(s);
+const $$ = (s,el=document) => [...el.querySelectorAll(s)];
+let toastTimer=null;
+const toast = (msg,d=2000)=>{
+  const t=$('#toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),d);
+};
+const probeImg = (src) => new Promise(res=>{
+  const im=new Image();
+  im.onload=()=>res(src);im.onerror=()=>res(null);
+  im.src=src;
+});
+
+/* ============================================================
+ * 音频 / 视频 管理
+ * ============================================================ */
+const bgVideoIds = ['bgVideoHome','bgVideoItin','bgVideoAi'];
+let muted = false;
+
+function syncMuteUI(){
+  const label = muted ? '🔇 静音' : '🔊 有声';
+  $('#muteBtnHome').textContent = label;
+  $('#muteBtnItin').textContent = label;
+  $('#muteBtnAi').textContent = label;
+  $$('.mute-btn').forEach(b=>{
+    b.textContent = label;
+    b.classList.toggle('muted', muted);
+  });
+}
+function setMuteAll(m){
+  muted = m;
+  bgVideoIds.forEach(id=>{
+    const v=document.getElementById(id);
+    if(v) v.muted = m;
+  });
+  syncMuteUI();
+}
+$$('.mute-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    setMuteAll(!muted);
+    toast(muted?'已静音':'已开启声音');
+  });
+});
+
+let bgPausedBySpeech = false;
+function pauseAllBg(){
+  bgVideoIds.forEach(id=>{const v=document.getElementById(id);if(v) v.pause();});
+}
+function resumeBg(){
+  const active = $('.page.active');
+  if(!active) return;
+  const idMap = {'page-home':'bgVideoHome','page-itinerary':'bgVideoItin','page-ai':'bgVideoAi'};
+  const id = idMap[active.id];
+  if(!id) return;
+  const v=document.getElementById(id);
+  if(!v) return;
+  v.muted = muted;
+  v.play().catch(()=>{});
+}
+function onSpeechStart(){
+  bgPausedBySpeech = true;
+  pauseAllBg();
+}
+function onSpeechEnd(){
+  bgPausedBySpeech = false;
+  if(muted){
+    setMuteAll(true);
+  }
+  resumeBg();
+}
+
+/* ============================================================
+ * 底部导航（唯一）
+ * ============================================================ */
+function switchPage(id){
+  $$('.page').forEach(p=>p.classList.remove('active'));
+  $('#page-'+id).classList.add('active');
+  $$('.bottom-nav .nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+  const colors = {home:'#ffb347',scenic:'#ff5252',itinerary:'#14b8a6',ai:'#a855f7'};
+  document.documentElement.style.setProperty('--page-color',colors[id]||'#ffb347');
+  pauseAllBg();
+  setTimeout(()=>resumeBg(),80);
+  if(id==='home'){
+    const ft=$('#homeFloatTitle');
+    ft.classList.remove('show');void ft.offsetWidth;ft.classList.add('show');
+    setTimeout(()=>ft.classList.remove('show'),5000);
+  }
+  if(id==='scenic'){ initMap(); }
+  if(id==='itinerary'){ loadWeather(); }
+}
+$$('.bottom-nav .nav-item').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.page)));
+$$('.home-entry-btns .entry-btn').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.goto)));
+
+/* ============================================================
+ * 季节切换
+ * ============================================================ */
+let currentSeason = 'Summer';
+function getSeasonImgSrc(kind, season){
+  const map = {
+    map: [`./Assets/images/map/${season}_map.png`, `./Assets/images/map/${season}_map.jpg`],
+    A:   [`./Assets/images/roadmap/A/${season}_Amap.jpg`, `./Assets/images/roadmap/A/${season}_Amap.png`],
+    B:   [`./Assets/images/roadmap/B/${season}_Bmap.jpg`, `./Assets/images/roadmap/B/${season}_Bmap.png`]
+  };
+  return map[kind];
+}
+async function applySeason(season){
+  currentSeason = season;
+  $$('#seasonSwitch span, #seasonSwitch2 span').forEach(s=>s.classList.toggle('active',s.dataset.season===season));
+  // Map
+  const mapImgs = getSeasonImgSrc('map', season);
+  for(const src of mapImgs){
+    const r = await probeImg(src);
+    if(r){ $('#mapImg').src = r; break; }
+  }
+  // Route A
+  const aImgs = getSeasonImgSrc('A', season);
+  for(const src of aImgs){
+    const r = await probeImg(src);
+    if(r){ $('#routeAImg').src = r; break; }
+  }
+  // Route B
+  const bImgs = getSeasonImgSrc('B', season);
+  for(const src of bImgs){
+    const r = await probeImg(src);
+    if(r){ $('#routeBImg').src = r; break; }
+  }
+  // After map change, reset map view
+  if($('#page-scenic').classList.contains('active')) initMap();
+}
+$$('#seasonSwitch span, #seasonSwitch2 span').forEach(s=>s.addEventListener('click',()=>applySeason(s.dataset.season)));
+
+/* ============================================================
+ * 地图系统
+ *  - 初始缩放：适配屏幕完整显示 1728×2304（cover/最小scale）
+ *  - 最小缩放：同初始
+ *  - 最大缩放：初始 × 2
+ *  - 拖拽限制：不允许拖出边界（地图覆盖全页，无黑边）
+ * ============================================================ */
+let mapScale=1, mapX=0, mapY=0;
+let minScale=0.6, maxScale=2.4;
+
+function computeScale(){
+  const wrap=$('#mapWrap');
+  const w=wrap.clientWidth, h=wrap.clientHeight;
+  // 适配屏幕完整显示（contain 的较小者）
+  const s = Math.min(w/MAP_W, h/MAP_H);
+  return Math.max(0.01, s);
+}
+function clampOffset(){
+  const wrap=$('#mapWrap');
+  const w=wrap.clientWidth, h=wrap.clientHeight;
+  const imgW = MAP_W*mapScale, imgH = MAP_H*mapScale;
+  // 地图必须覆盖屏幕（不出现黑边），因此：
+  // 若地图比屏幕大：允许拖动但地图边缘不能进入屏幕内（地图继续覆盖屏幕）
+  //   即 mapX 范围为 [w-imgW, 0]，保证至少能覆盖屏幕
+  // 若地图比屏幕小：固定居中
+  if(imgW >= w && imgH >= h){
+    mapX = Math.min(0, Math.max(w-imgW, mapX));
+    mapY = Math.min(0, Math.max(h-imgH, mapY));
+  } else {
+    mapX = (w-imgW)/2;
+    mapY = (h-imgH)/2;
+  }
+}
+function applyMap(){
+  clampOffset();
+  const img=$('#mapImg');
+  img.style.transform = `translate(${mapX}px,${mapY}px) scale(${mapScale})`;
+  renderAtts();
+}
+function initMap(){
+  const s = computeScale();
+  minScale = s;
+  maxScale = s*2;
+  mapScale = s;
+  const wrap=$('#mapWrap');
+  const w=wrap.clientWidth, h=wrap.clientHeight;
+  const imgW = MAP_W*mapScale, imgH = MAP_H*mapScale;
+  mapX = (w-imgW)/2;
+  mapY = (h-imgH)/2;
+  applyMap();
+}
+function zoomBy(factor, cx, cy){
+  const wrap=$('#mapWrap');
+  const rect=wrap.getBoundingClientRect();
+  const px = (cx!==undefined) ? cx-rect.left : rect.width/2;
+  const py = (cy!==undefined) ? cy-rect.top : rect.height/2;
+  const ratio = factor;
+  let newScale = mapScale * ratio;
+  newScale = Math.max(minScale, Math.min(maxScale, newScale));
+  const realRatio = newScale / mapScale;
+  // 保持鼠标点（或中心）在地图上的位置不变
+  mapX = px - (px - mapX)*realRatio;
+  mapY = py - (py - mapY)*realRatio;
+  mapScale = newScale;
+  applyMap();
+}
+$('#zoomInBtn').onclick = ()=>zoomBy(1.25);
+$('#zoomOutBtn').onclick = ()=>zoomBy(1/1.25);
+$('#resetBtn').onclick = initMap;
+
+// drag (mouse)
+(function(){
+  const wrap=$('#mapWrap');
+  let sx=0,sy=0,ox=0,oy=0,drag=false,moved=false;
+  wrap.addEventListener('mousedown',e=>{
+    if(e.button!==0) return;
+    drag=true;moved=false;sx=e.clientX;sy=e.clientY;ox=mapX;oy=mapY;
+    wrap.classList.add('grabbing');
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!drag) return;
+    const nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    // 预估不超出边界
+    mapX=nx;mapY=ny;clampOffset();
+    if(Math.abs(nx-mapX)+Math.abs(ny-mapY)>1) moved=true;
+    applyMap();
+  });
+  window.addEventListener('mouseup',()=>{
+    drag=false;wrap.classList.remove('grabbing');
+  });
+  // wheel zoom (with bounds)
+  wrap.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const delta = e.deltaY<0 ? 1.12 : 1/1.12;
+    zoomBy(delta, e.clientX, e.clientY);
+  },{passive:false});
+
+  // touch
+  let tStart=null,tDist=null;
+  wrap.addEventListener('touchstart',e=>{
+    if(e.touches.length===1){
+      tStart={x:e.touches[0].clientX,y:e.touches[0].clientY,mx:mapX,my:mapY};
+    } else if(e.touches.length===2){
+      tDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      tStart.s=mapScale;
+    }
+  },{passive:true});
+  wrap.addEventListener('touchmove',e=>{
+    if(e.touches.length===1 && tStart){
+      mapX=tStart.mx+(e.touches[0].clientX-tStart.x);
+      mapY=tStart.my+(e.touches[0].clientY-tStart.y);
+      clampOffset();applyMap();
+    } else if(e.touches.length===2 && tDist){
+      const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      const newScale = Math.max(minScale,Math.min(maxScale, tStart.s*(d/tDist)));
+      // 双指以中点为锚
+      const cx=(e.touches[0].clientX+e.touches[1].clientX)/2;
+      const cy=(e.touches[0].clientY+e.touches[1].clientY)/2;
+      zoomBy(newScale/tStart.s, cx, cy);
+    }
+  },{passive:true});
+  wrap.addEventListener('touchend',()=>{tStart=null;tDist=null;});
+})();
+
+/* ============================================================
+ * 景点按钮（基于1728×2304原图坐标）
+ * ============================================================ */
+function renderAtts(){
+  const layer=$('#attLayer');
+  layer.innerHTML='';
+  const img=$('#mapImg');
+  const layerRect=layer.getBoundingClientRect();
+  // atts 层位置始终 (0,0) 对齐 map-wrap（已定位）
+  // img 在 wrap 中的位置: mapX, mapY；缩放 mapScale
+  // att 按钮相对于 img 左上角的像素偏移为 (a.x*mapScale, a.y*mapScale)
+  // 将其转为 atts 层坐标（atts 层为 fixed/absolute 基于 wrap）
+  // 因为 atts 层与 img 都用绝对定位，原点相同，直接用 mapX + a.x*mapScale 即可
+  const positions = [];
+  Object.entries(BIG_ATTRACTIONS).forEach(([key,a])=>positions.push({key,a,isBig:true}));
+  Object.entries(ATTRACTIONS).forEach(([key,a])=>positions.push({key,a,isBig:false}));
+
+  positions.forEach(({key,a,isBig})=>{
+    const x = mapX + a.x*mapScale;
+    const y = mapY + a.y*mapScale;
+    const btn = document.createElement('div');
+    btn.className='att-btn'+(isBig?' big':'');
+    btn.style.left=x+'px';
+    btn.style.top=y+'px';
+    btn.innerHTML = `<span>${a.name}</span>
+      <div class="att-label">${a.name}</div>
+      <div class="pin" title="高德导航">📍</div>`;
+    btn.querySelector('span').style.display='none';
+    btn.addEventListener('click',e=>{
+      if(e.target.classList.contains('pin') || e.target.parentElement.classList.contains('pin')){
+        const navName = key==='wangtiantai' ? '天坛' : a.name;
+        window.open(`https://uri.amap.com/search?keyword=台州府城+${encodeURIComponent(navName)}`,'_blank');
+        return;
+      }
+      focusAndOpen(key);
+    });
+    layer.appendChild(btn);
+  });
+}
+function focusAndOpen(key){
+  const a = ATTRACTIONS[key] || BIG_ATTRACTIONS[key];
+  if(!a) return;
+  const wrap=$('#mapWrap');
+  const r=wrap.getBoundingClientRect();
+  const targetX = a.x*mapScale + mapX;
+  const targetY = a.y*mapScale + mapY;
+  mapX = mapX + (r.width/2 - targetX);
+  mapY = mapY + (r.height/2 - targetY);
+  applyMap();
+  openModal(key);
+}
+
+/* ============================================================
+ * 景点弹窗
+ * ============================================================ */
+let carouselTimer=null;
+let currentSpeakText='';
+function openModal(key){
+  const a = ATTRACTIONS[key] || BIG_ATTRACTIONS[key];
+  if(!a) return;
+  $('#modalTitle').textContent = a.name;
+  $('#modalDesc').textContent = a.desc;
+  $('#modalCarousel').innerHTML='';
+  const imgs = (a.imgs||[]);
+  if(imgs.length===0){
+    $('#modalCarousel').style.display='none';
+  } else {
+    $('#modalCarousel').style.display='';
+    imgs.forEach((name,i)=>{
+      const d=document.createElement('img');
+      d.src=`./Assets/images/card/${name}.jpg`;
+      if(i===0) d.classList.add('active');
+      $('#modalCarousel').appendChild(d);
+    });
+    const dots=document.createElement('div');dots.className='dots';
+    imgs.forEach((_,i)=>{const s=document.createElement('span');if(i===0)s.classList.add('active');dots.appendChild(s);});
+    $('#modalCarousel').appendChild(dots);
+    clearInterval(carouselTimer);
+    let idx=0;
+    carouselTimer=setInterval(()=>{
+      const imgs2=$('#modalCarousel').querySelectorAll('img');
+      const ds=$('#modalCarousel').querySelectorAll('.dots span');
+      if(!imgs2.length){clearInterval(carouselTimer);return;}
+      imgs2[idx].classList.remove('active');ds[idx].classList.remove('active');
+      idx=(idx+1)%imgs2.length;
+      imgs2[idx].classList.add('active');ds[idx].classList.add('active');
+    },2800);
+  }
+  $('#modalVr').style.display = BIG_ATTRACTIONS[key] ? '' : 'none';
+  $('#modalVr').onclick = ()=>{ if(BIG_ATTRACTIONS[key]?.vr) window.open(BIG_ATTRACTIONS[key].vr,'_blank'); };
+  $('#modalNav').onclick = ()=>{
+    const navName = key==='wangtiantai' ? '天坛' : a.name;
+    window.open(`https://uri.amap.com/search?keyword=台州府城+${encodeURIComponent(navName)}`,'_blank');
+  };
+  $('#modalSpeak').onclick = ()=>speakText(a.desc);
+  $('#attModal').classList.add('show');
+  pauseAllBg();
+}
+function closeModal(){
+  $('#attModal').classList.remove('show');
+  clearInterval(carouselTimer);carouselTimer=null;
+  stopSpeak();
+  if(!bgPausedBySpeech) resumeBg();
+}
+$('#modalClose').onclick=closeModal;
+$('#attModal').addEventListener('click',e=>{if(e.target.id==='attModal')closeModal();});
+
+/* ============================================================
+ * 语音合成（朗读）
+ * ============================================================ */
+let currentUtter=null;
+let rateVal=1.0;
+let voiceOn=true;
+function speakText(text){
+  stopSpeak();
+  if(!('speechSynthesis' in window)){toast('当前浏览器不支持语音合成');return;}
+  if(!voiceOn){toast('语音已关闭，可点击🔊开启');return;}
+  currentSpeakText = text;
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='zh-CN';u.rate=rateVal;u.pitch=1;
+  currentUtter=u;
+  onSpeechStart();
+  window.speechSynthesis.speak(u);
+  u.onend=()=>{currentUtter=null;onSpeechEnd();};
+  u.onerror=()=>{currentUtter=null;onSpeechEnd();};
+}
+function stopSpeak(){
+  if('speechSynthesis' in window) window.speechSynthesis.cancel();
+  currentUtter=null;
+}
+
+/* ============================================================
+ * 行程规划
+ * ============================================================ */
+function renderRouteSteps(){
+  $('#routeASteps').innerHTML = '推荐游览顺序：'+ROUTE_A_STEPS.map(s=>`<span>${s}</span>`).join(' → ');
+  $('#routeBSteps').innerHTML = '推荐游览顺序：'+ROUTE_B_STEPS.map(s=>`<span>${s}</span>`).join(' → ');
+}
+renderRouteSteps();
+
+$$('.itin-left .tab').forEach(t=>t.addEventListener('click',()=>{
+  $$('.itin-left .tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  $('#officialPanel').style.display = t.dataset.group==='official'?'':'none';
+  $('#smartPanel').style.display = t.dataset.group==='smart'?'':'none';
+}));
+$$('.itin-left .sub').forEach(s=>s.addEventListener('click',()=>{
+  $$('.itin-left .sub').forEach(x=>x.classList.remove('active'));
+  s.classList.add('active');
+  $('#routeA').style.display = s.dataset.route==='A'?'':'none';
+  $('#routeB').style.display = s.dataset.route==='B'?'':'none';
+}));
+$$('.zoomable').forEach(img=>{
+  img.addEventListener('click',()=>img.classList.toggle('zoomed'));
+});
+
+async function loadWeather(){
+  try{
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=28.85&longitude=121.12&current_weather=true');
+    const d=await r.json();
+    const w=d.current_weather||{};
+    $('#weatherTemp').textContent=(w.temperature||'--')+'℃';
+    const codeMap={0:'晴',1:'晴',2:'多云',3:'阴',45:'有雾',48:'雾凇',51:'小雨',61:'小雨',63:'中雨',65:'大雨',71:'小雪',73:'中雪',75:'大雪',80:'阵雨',81:'阵雨',82:'暴雨'};
+    $('#weatherDesc').textContent = codeMap[w.weathercode] || '--';
+  }catch(e){ $('#weatherTemp').textContent='--℃'; $('#weatherDesc').textContent='网络错误'; }
+}
+
+/* ============================================================
+ * 本地智能引擎（完全免费、零 Key、纯本地知识匹配）
+ * 若用户在 localStorage 中配置了有效 Key，会优先调用云端；否则自动降级到本地知识库。
+ * ============================================================ */
+const KB = [
+  {keys:['紫阳街','紫阳','张伯端','非遗','老街'], type:'att', value:'紫阳街：全长约1080米，是台州府城的主干道，至今仍保持着北宋时期的里坊制格局。为中国历史文化名街，入选第一批浙江省非遗主题街区。古街上有悟真坊、顺政坊等坊墙，以及千佛井、中国人民银行台州支行旧址等历史遗迹。街区展示有剪纸、草编、黄沙狮子等20余项非遗。特色美食有蛋清羊尾、海苔饼、梅花糕、麦虾、糟羹等。古街因道教南宗鼻祖张伯端（紫阳真人）得名。'},
+  {keys:['府城墙','长城','江南长城','城墙','揽胜门','鹿城'], type:'att', value:'台州府城墙：始建于东晋，距今已有1600余年历史，现存全长4700余米。古建筑学家罗哲文誉其为北京八达岭等长城的师范和蓝本。城墙沿北固山山脊蜿蜒至灵江东岸，揽胜门是主要入口，有198级台阶直达。城墙上的铭文砖已发现179种，包含"永保万安"等吉语。独特构造有弧形马面，以及双层空心敌台。城墙兼具军事防御和城市防洪功能。相传唐代修筑百步峻时，曾因雪中灵鹿足迹找到最佳路线，临海因此得名"鹿城"。'},
+  {keys:['东湖'], type:'att', value:'东湖：因位于台州府城墙东侧而得名，南北长约500米，东西宽约150米。清代文人俞樾曾赞誉"杭州有西湖，台州有东湖，东湖之胜，小西湖也"。前身是北宋初年的水军营，后由郡守钱暄于熙宁四年开凿成湖。分为前湖和后湖，有台州园林之首的美誉。主要景点包括湖心亭、半勾亭、九曲桥，以及骆宾王祠。'},
+  {keys:['瓮城'], type:'att', value:'瓮城：位于古城墙临江诸城门，为半圆形围合空间。清康熙年间修建，兼具军事防御与防洪功能，能有效围剿攻入城门的敌军。'},
+  {keys:['西门街'], type:'att', value:'西门街：东西走向的历史老街，曾是西出府城通往杭州等地的要道。街两旁保留着明清至民国风格的建筑，店铺林立，是品味古城昔日繁华与市井烟火气的绝佳去处。'},
+  {keys:['白云楼'], type:'att', value:'白云楼：坐落于北固山东侧，是台州府城墙的最高点。此楼为双层重檐歇山顶建筑，登楼远眺，可北望白云山，南瞰巾子山，将古城与新城的壮丽风光尽收眼底。'},
+  {keys:['天坛','望天台'], type:'att', value:'天坛（即望天台）：位于府城墙上，是古时台州府举行祭天、祈谷等重大祭祀典礼的神圣场所，承载着深厚的历史文化底蕴。'},
+  {keys:['揽胜门','好汉坡'], type:'att', value:'揽胜门：台州府城墙东端的起点。门前有象征性的198级好汉坡，登上城楼顾景楼回望，可将东湖美景与古城风貌一览无余，是俯瞰全景的绝佳位置。'},
+  {keys:['樵云阁'], type:'att', value:'樵云阁：矗立于东湖之北，是全湖的最高建筑。登临此阁，四周湖光山色尽收眼底。阁名源于纪念一位为民族气节而投湖的樵夫。'},
+  {keys:['湖心亭'], type:'att', value:'湖心亭：位于东湖外湖，亭阁飞檐八出，造型空灵大气。亭内悬有清代学者俞樾所题楹联，将此间好水好山与西湖美景相提并论，是东湖的标志性景观。'},
+  {keys:['路线a','a路线','一日游','精华','怎么走','a线'], type:'route_a', value:'A 路线（精华一日）：瓮城 → 紫阳街 → 西门街 → 朝天门 → 望天台 → 白云楼 → 揽胜门 → 东湖。该路线串联台州府城墙与古城街区的核心精华段落，全程建议穿舒适鞋子。门票参考：台州府城墙与东湖联票70元，单买城墙60元、东湖15元。也可反向游览，从东湖出发登城后多为下坡，相对省力。'},
+  {keys:['路线b','b路线','深度','文化','b线'], type:'route_b', value:'B 路线（深度文化）：瓮城 → 紫阳街 → 西门街 → 朝天门 → 平海楼 → 镇宁门。该路线以府城西部城墙与古街巷为主，串联起古城防御体系与市井生活区，全长约4千米，游览时间约2.5小时。建议穿舒适鞋子，沿途可品尝蛋清羊尾、海苔饼、麦虾等小吃。门票参考：联票70元、城墙60元，B路线无需进入东湖景区。'},
+  {keys:['进士','巡抚','王宗沐','王士琦','王士昌'], type:'story', value:'父子四进士，一门三巡抚。台州进士世家里最让人叹为观止的是王宗沐家族：王宗沐本人是进士，他的三个儿子也全都考上进士，父子四人皆为进士。儿子王士琦任大同巡抚，王士昌任福建巡抚，加上王宗沐自己也任巡抚，一家人分别在不同省份当巡抚，这就是历史上的"一门三巡抚"。'},
+  {keys:['天台宗','最澄','道邃','龙兴寺','日本'], type:'story', value:'公元八〇四年，日本高僧最澄搭遣唐使船来到中国，被台州刺史陆淳亲自接待，介绍给龙兴寺的道邃大师。道邃在龙兴寺极乐净土院为最澄及随行27名中日僧侣集体授戒，传授天台宗核心典籍。最澄回到日本后，开创了日本天台宗。'},
+  {keys:['鉴真','东渡'], type:'story', value:'鉴真六次东渡日本，第四次失败后曾在台州驻锡，于龙兴寺停留并与当地僧侣深入交流。台州龙兴寺始建于唐神龙元年，是有皇家背景的官寺。鉴真的停留为后来最澄赴台州埋下伏笔，让台州在中日文化交流史上留下辉煌印记。'},
+  {keys:['茶','茶道','茶籽','蟠毫'], type:'story', value:'最澄从台州回日本时，除佛法外还带走了天台山的茶籽，开创了日本茶叶种植的历史。今天风靡全球的日本茶道，其渊源之一就在台州茶山。台州本地最有名的茶叶是临海蟠毫。'},
+  {keys:['一宁','一山派','五山','禅宗'], type:'story', value:'元代临海人一宁，被元朝派去出使日本，抵达后留在日本广传禅法，创立日本禅宗"一山派"。他还将中国的文学、书法、绘画带到日本，成为日本五山文学的奠基人之一。'},
+  {keys:['美食','小吃','吃','特色菜'], type:'food', value:'台州府城特色美食：蛋清羊尾（传统甜品）、海苔饼、梅花糕、麦虾、糟羹、姜汤面、食饼筒（卷饼）、嵌糕、乌米饭、麦油脂等。推荐在紫阳街一路吃过去。'},
+  {keys:['门票','价格','多少钱'], type:'info', value:'门票参考：台州府城墙与东湖联票70元；单买城墙60元、东湖15元。B路线无需进入东湖景区。'},
+  {keys:['天气','气温','温度'], type:'info', value:'当前天气可在"行程规划"页右上角实时查看（Open-Meteo 提供）。出行前建议关注实时预报。'},
+  {keys:['vr','全景','虚拟'], type:'info', value:'府城墙、东湖、紫阳街均支持 VR 全景游览。在景点弹窗点击"🎥 VR"按钮即可跳转沉浸式全景页面。'},
+  {keys:['导航','地图','怎么走','高德'], type:'info', value:'每个景点旁的📍图标会跳转到高德地图搜索"台州府城+景点名"，可直接调用手机导航。'}
+];
+
+function matchKB(text){
+  if(!text) return null;
+  const q = text.toLowerCase();
+  // 计分匹配
+  let best=null, bestScore=0;
+  for(const item of KB){
+    let score=0;
+    for(const k of item.keys){
+      if(q.includes(k.toLowerCase())){
+        score += k.length; // 长关键词权重更大
+      }
+    }
+    if(score>bestScore){bestScore=score;best=item;}
+  }
+  return bestScore>=2 ? best : null;
+}
+
+function localAIReply(userText){
+  const hit = matchKB(userText);
+  if(hit){
+    return hit.value;
+  }
+  // 兜底：给出欢迎语 + 引导
+  const tips = [
+    '您可以问我：\n· 介绍一下紫阳街\n· 台州府城墙的历史\n· 东湖有什么好玩的\n· 推荐一条游览路线\n· 特色美食有哪些\n· 父子四进士的故事\n· 鉴真与台州的缘分\n· 如何导航到景点',
+    '我是台州府城 AI 小助手。试试问我某个景点（如"白云楼"）或路线（如"A路线"）吧！',
+    '可以试试：介绍一下府城墙 / 推荐美食 / 天台宗的由来 / VR 全景怎么用。'
+  ];
+  const idx = Math.floor(Math.random()*tips.length);
+  return '关于"' + userText + '"，我暂时没有直接答案。\n\n' + tips[idx];
+}
+
+function getAIKey(){
+  try{
+    if(window.__AI_KEY__) return String(window.__AI_KEY__).trim();
+  }catch(e){}
+  try{
+    const k = localStorage.getItem('__AI_KEY__');
+    if(k) return k.trim();
+  }catch(e){}
+  return '';
+}
+
+async function callAI(userText){
+  // 1) 优先尝试 Pollinations（免费、零 Key、支持中文、响应快）
+  try{
+    const t0 = performance.now();
+    const text = await fetchPollinations(userText);
+    if(text && text.trim()){
+      console.log('[Pollinations] 回复耗时', Math.round(performance.now()-t0)+'ms');
+      return text.trim();
+    }
+  }catch(e){}
+  // 2) 可选：用户配置了智谱 Key 则调用智谱
+  const key = getAIKey();
+  if(key){
+    try{
+      const resp=await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+        body:JSON.stringify({model:'glm-4.7-flash',messages:[{role:'user',content:userText}],temperature:0.7})
+      });
+      if(resp.ok){
+        const data=await resp.json();
+        const text=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content);
+        if(text && text.trim()) return text.trim();
+      }
+    }catch(e){}
+  }
+  // 3) 兜底：本地知识库
+  return localAIReply(userText);
+}
+
+/* Pollinations 免费 API（支持中文、无需 Key、响应快） */
+async function fetchPollinations(userText){
+  const prompt = encodeURIComponent(userText);
+  const url = `https://text.pollinations.ai/${prompt}?model=flux&temperature=0.7&maxTokens=600&nologo=true&seed=${Date.now()}`;
+  const resp = await fetch(url, {signal: AbortSignal.timeout?AbortSignal.timeout(15000):undefined});
+  if(!resp.ok) throw new Error('pollinations http '+resp.status);
+  const text = await resp.text();
+  return text;
+}
+
+async function fetchWeatherText(){
+  try{
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=28.85&longitude=121.12&current_weather=true');
+    const d=await r.json();const w=d.current_weather||{};
+    return `${w.temperature}℃`;
+  }catch(e){ return '未知'; }
+}
+
+async function generateItinerary(){
+  const days=$('#inDays').value;
+  const interest=$('#inInterest').value;
+  const people=$('#inPeople').value||'2人';
+  const weatherInfo = await fetchWeatherText();
+  const prompt = `请生成一份台州府城旅游${days}天行程，兴趣偏好：${interest}，同行：${people}。
+当前台州天气：${weatherInfo}。
+请按天分段，每个景点给出简短介绍、建议游览时长、推荐美食，并结合天气给出合理建议。用中文返回。`;
+  $('#itinResult').textContent = '🤖 AI 正在为您生成行程…';
+  try{
+    const text = await callAI(prompt);
+    $('#itinResult').textContent = text;
+  }catch(e){ $('#itinResult').textContent='生成失败：'+e.message; }
+}
+$('#genItinBtn').onclick=generateItinerary;
+
+/* ============================================================
+ * 智能问答
+ * ============================================================ */
+const chatBox=$('#chatBox');
+function addMsg(text,role){
+  const m=document.createElement('div');
+  m.className='chat-msg '+role;
+  m.textContent=text;
+  chatBox.appendChild(m);
+  chatBox.scrollTop=chatBox.scrollHeight;
+  return m;
+}
+function addTyping(){
+  const m=document.createElement('div');
+  m.className='chat-msg ai';
+  m.innerHTML='<span class="typing"></span><span class="typing"></span><span class="typing"></span>';
+  chatBox.appendChild(m);chatBox.scrollTop=chatBox.scrollHeight;
+  return m;
+}
+
+$$('.ai-card').forEach(card=>{
+  card.addEventListener('click',()=>{
+    const q=card.dataset.q;
+    $('#chatInput').value=q;
+    sendChat();
+  });
+});
+
+async function sendChat(){
+  const input=$('#chatInput');
+  const q=input.value.trim();
+  if(!q)return;
+  addMsg(q,'user');
+  input.value='';
+  const typing=addTyping();
+  try{
+    const text = await callAI(q);
+    typing.remove();
+    addMsg(text,'ai');
+    if(voiceOn) speakText(text);
+  }catch(e){
+    typing.remove();addMsg('错误：'+e.message,'ai');
+  }
+}
+$('#sendBtn').onclick=sendChat;
+$('#chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
+
+$('#rateBtn').onclick=()=>{
+  rateVal = rateVal>=1.5 ? 0.5 : rateVal+0.25;
+  $('#rateBtn').textContent = rateVal.toFixed(2).replace(/0$/,'')+'x';
+};
+$('#voiceBtn').onclick=()=>{
+  voiceOn = !voiceOn;
+  $('#voiceBtn').classList.toggle('on',voiceOn);
+  $('#voiceBtn').textContent = voiceOn?'🔊开':'🔇关';
+};
+
+/* ============================================================
+ * AI Key 自动注入（支持 Key 自动读取；若 Key 无效则自动降级为本地知识库）
+ * ============================================================ */
+(function injectAIKey(){
+  try{
+    const existing = localStorage.getItem('__AI_KEY__');
+    if(existing) window.__AI_KEY__ = existing;
+  }catch(e){}
+})();
+
+/* ============================================================
+ * 初始化
+ * ============================================================ */
+window.addEventListener('resize',()=>{
+  if($('#page-scenic').classList.contains('active')){
+    // Recompute min scale
+    const s = computeScale();
+    minScale = s;
+    maxScale = s*2;
+    // 保持至少 minScale
+    if(mapScale < minScale) mapScale = minScale;
+    if(mapScale > maxScale) mapScale = maxScale;
+    applyMap();
+  }
+});
+
+window.addEventListener('load',()=>{
+  // 初始尝试播放首页视频（部分浏览器需要先 unmute 再播放）
+  ['bgVideoHome','bgVideoItin','bgVideoAi'].forEach(id=>{
+    const v=document.getElementById(id);
+    if(!v) return;
+    const tryPlay = () => v.play().catch(()=>{ v.muted=true; v.play().catch(()=>{}); });
+    tryPlay();
+  });
+  // 首页飘字
+  setTimeout(()=>{
+    const ft=$('#homeFloatTitle');
+    ft.classList.add('show');
+    setTimeout(()=>ft.classList.remove('show'),5000);
+  },500);
+  // 默认加载地图（隐藏的 scenic 页也要初始化，保证首次切换就有图）
+  initMap();
+  // 保证地图图片可用
+  applySeason('Summer');
+});
+</script>
+</body>
+</html>
