@@ -32,7 +32,6 @@
   body:not(.ready) #home { visibility: visible !important; }
   body:not(.ready) #home video { opacity: 0; }
   body:not(.ready) #home .home-overlay,
-  body:not(.ready) #home .home-splash,
   body:not(.ready) #home .mute-toggle,
   body:not(.ready) #home .home-season-decor { opacity: 0; }
   body { background: #000; color: #fff; transition: background .6s ease; }
@@ -107,15 +106,18 @@
   .nav-item:hover { color: #fff; }
 
   /* ====== Full video bg ====== */
-  .video-bg {
-    position: absolute; inset: 0; width: 100%; height: 100%;
+  #globalVideo {
+    position: fixed; inset: 0; width: 100%; height: 100%;
     object-fit: cover; z-index: 0;
-    opacity: 0;
-    transition: opacity .9s ease;
+    opacity: 1;
+    background: #000;
   }
-  #home .video-bg { z-index: 1; }
-  body.ready .video-bg { opacity: 1; }
-  .video-bg.loop { animation: none; }
+  body:not(.ready) #globalVideo { opacity: 0; }
+  body.ready #globalVideo { opacity: 1; }
+  #home { z-index: 1; }
+  #scenic { z-index: 1; }
+  #itinerary { z-index: 1; }
+  #qa { z-index: 1; overflow-y: auto; overflow-x: hidden; }
 
   /* ====== HOME ====== */
   #home { overflow: hidden; }
@@ -250,6 +252,30 @@
     70% { opacity: 1; transform: translateY(-4px) scale(1) rotate(0deg); filter: blur(0); }
     100% { opacity: 0; transform: translateY(-16px) scale(.96) rotate(0deg); filter: blur(4px); }
   }
+  .splash-enter-btn {
+    display: block; margin: 40px auto 0;
+    padding: 16px 48px;
+    font-size: 20px; font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, var(--page-color), rgba(255,255,255,.2));
+    border: 2px solid rgba(255,255,255,.6);
+    border-radius: 50px;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s ease 1.5s forwards;
+    box-shadow: 0 0 30px rgba(255,255,255,.3), 0 8px 32px rgba(0,0,0,.3);
+    transition: all 0.3s ease;
+    pointer-events: auto;
+  }
+  .splash-enter-btn:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 0 40px rgba(255,255,255,.5), 0 12px 40px rgba(0,0,0,.4);
+    background: linear-gradient(135deg, var(--page-color), rgba(255,255,255,.4));
+  }
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
 
   .home-season-decor {
     position: absolute; inset: 0; z-index: 2;
@@ -308,15 +334,16 @@
   .home-btn .bi { font-size: 40px; transition: transform .4s; }
   .home-btn:hover .bi { transform: scale(1.15) rotate(-5deg); }
   .mute-toggle {
-    position: absolute; top: 50%; right: 22px; transform: translateY(-50%); z-index: 30;
-    width: 48px; height: 48px; border-radius: 50%;
-    background: rgba(0,0,0,.45); backdrop-filter: blur(10px);
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,.08); backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px; border: 1px solid rgba(255,255,255,.2);
+    font-size: 14px; border: 1px solid rgba(255,255,255,.15);
     cursor: pointer;
+    transition: all .35s cubic-bezier(.4,0,.2,1);
   }
-  .mute-toggle:hover { background: var(--page-color); color: #222; border-color: transparent; transform: translateY(-50%) scale(1.08); }
-  .mute-toggle:active { transform: translateY(-50%) scale(.95); }
+  .mute-toggle:hover { background: var(--page-color); color: #222; border-color: transparent; transform: scale(1.1); }
+  .mute-toggle:active { transform: scale(.95); }
 
   /* ====== SCENIC ====== */
   #scenic { overflow: hidden; background: #0a0a10; }
@@ -362,6 +389,10 @@
     border-radius: 16px; padding: 10px 12px;
     box-shadow: 0 10px 30px rgba(0,0,0,.4);
     width: 200px;
+  }
+  .scenic-panel-hint {
+    font-size: 10px; color: rgba(255,255,255,.5);
+    text-align: center; padding: 4px 0;
   }
   .scenic-panel-title {
     font-size: 12px; font-weight: 700; letter-spacing: 2px;
@@ -421,6 +452,7 @@
   .map-wrap .map-img {
     position: absolute; top: 0; left: 0;
     width: 1728px; height: 2304px;
+    max-width: none;
     transform-origin: 0 0;
     user-select: none; -webkit-user-drag: none;
     pointer-events: none;
@@ -932,13 +964,42 @@
   .speech-btn .speech-icon { font-size: 16px; }
 
   /* ====== VR Modal ====== */
-  .vr-modal { max-width: 720px; }
-  .vr-frame-wrap {
+  .vr-modal { max-width: 65vw; max-height: 75vh; }
+  .vr-controls {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-bottom: 12px; padding: 8px 16px;
+    background: rgba(0,0,0,.3); border-radius: 24px;
+  }
+  .vr-zoom-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+    color: #fff; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all .3s ease;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .vr-zoom-btn:hover {
+    background: var(--page-color); color: #222; border-color: var(--page-color);
+    transform: scale(1.1);
+  }
+  .vr-zoom-btn:active { transform: scale(.95); }
+  .vr-zoom-level {
+    font-size: 12px; color: rgba(255,255,255,.6);
+    min-width: 50px; text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .vr-frame-container {
     width: 100%; aspect-ratio: 16/10;
     border-radius: 12px; overflow: hidden;
     background: #000; margin-bottom: 16px;
     border: 1px solid rgba(255,255,255,.1);
     position: relative;
+    touch-action: none;
+  }
+  .vr-frame-wrap {
+    width: 100%; height: 100%;
+    position: relative;
+    transform-origin: center center;
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
   }
   .vr-frame-wrap iframe {
     width: 100%; height: 100%;
@@ -1083,7 +1144,6 @@
   .vr-list a span { font-size: 12px; opacity: .7; }
 
   /* ====== ITINERARY ====== */
-  #itinerary .video-bg { z-index: 0; }
   .itinerary-wrap {
     position: absolute; inset: 0; z-index: 1;
     display: flex; flex-direction: column;
@@ -1194,6 +1254,20 @@
     border: 1px solid rgba(255,255,255,.15); font-size: 14px;
     transition: all .3s;
     backdrop-filter: blur(10px);
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+  .smart-form select option {
+    background: #1a1a28;
+    color: #fff;
+    padding: 10px 15px;
+  }
+  .smart-form select option:hover,
+  .smart-form select option:focus,
+  .smart-form select option:checked {
+    background: var(--page-color);
+    color: #000;
   }
   .smart-form input:focus, .smart-form select:focus {
     border-color: var(--page-color);
@@ -1232,10 +1306,250 @@
 
   /* ====== ITINERARY (Master Redesign v2) ====== */
   #itinerary { overflow-x: hidden; overflow-y: auto; }
-  #itinerary .video-bg {
-    position: fixed; inset: 0; width: 100%; height: 100%;
-    object-fit: cover; z-index: 0;
+
+  /* ====== 当季打卡 ====== */
+  .seasonal-layout {
+    display: flex; flex-direction: column; gap: 16px;
+    animation: fadeInUp .5s ease;
   }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .seasonal-hero {
+    background: linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 20px;
+    padding: 24px;
+    position: relative; overflow: hidden;
+  }
+  .seasonal-hero::before {
+    content: ''; position: absolute; top: -30%; right: -20%;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(var(--page-color-rgb), .15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .seasonal-title-row {
+    display: flex; align-items: center; gap: 16px;
+    position: relative; z-index: 1;
+    margin-bottom: 12px;
+  }
+  .seasonal-icon {
+    font-size: 48px;
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .seasonal-title-wrap {
+    flex: 1;
+  }
+  .seasonal-title {
+    font-size: 24px; font-weight: 800;
+    background: linear-gradient(135deg, var(--page-color), #fff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+  }
+  .seasonal-subtitle {
+    font-size: 13px; color: rgba(255,255,255,.6);
+    margin: 4px 0 0; letter-spacing: 1px;
+  }
+  .seasonal-desc {
+    font-size: 14px; color: rgba(255,255,255,.8);
+    line-height: 1.7;
+    position: relative; z-index: 1;
+  }
+
+  .seasonal-highlights {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .seasonal-card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .seasonal-spots {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .seasonal-spot-card {
+    display: flex; gap: 10px;
+    padding: 10px;
+    background: rgba(255,255,255,.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.05);
+    transition: all .3s ease;
+    cursor: pointer;
+  }
+  .seasonal-spot-card:hover {
+    background: rgba(255,255,255,.06);
+    transform: translateX(4px);
+  }
+  .spot-img-wrap {
+    width: 70px; height: 50px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .spot-img-wrap img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  .spot-tag {
+    position: absolute; top: 4px; left: 4px;
+    font-size: 10px; padding: 2px 6px;
+    background: var(--page-color); color: #222;
+    border-radius: 4px; font-weight: 600;
+  }
+  .spot-info {
+    flex: 1; min-width: 0;
+  }
+  .spot-name {
+    font-size: 13px; font-weight: 600;
+    margin: 0 0 4px; color: #fff;
+    white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .spot-desc {
+    font-size: 11px; color: rgba(255,255,255,.6);
+    margin: 0 0 6px;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .spot-meta {
+    display: flex; gap: 8px;
+  }
+  .meta-item {
+    font-size: 10px; color: rgba(255,255,255,.5);
+  }
+  .spot-nav-icon {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    background: rgba(255,255,255,.08);
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all .3s ease;
+  }
+  .seasonal-spot-card:hover .spot-nav-icon {
+    background: var(--page-color);
+    transform: scale(1.1);
+  }
+
+  .seasonal-videos {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .video-card {
+    cursor: pointer;
+    transition: all .3s ease;
+  }
+  .video-card:hover { transform: translateY(-2px); }
+  .video-thumb {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    margin-bottom: 8px;
+  }
+  .video-thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  .video-play-btn {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,.4);
+    font-size: 28px; color: #fff;
+    opacity: 0;
+    transition: opacity .3s ease;
+  }
+  .video-card:hover .video-play-btn { opacity: 1; }
+  .video-play-btn::before {
+    content: '';
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--page-color);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  }
+  .video-duration {
+    position: absolute; bottom: 6px; right: 6px;
+    font-size: 10px; padding: 2px 4px;
+    background: rgba(0,0,0,.6); color: #fff;
+    border-radius: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .video-info {
+    padding: 0 4px;
+  }
+  .video-title {
+    font-size: 12px; font-weight: 600;
+    margin: 0 0 2px; color: #fff;
+    white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .video-channel {
+    font-size: 10px; color: rgba(255,255,255,.5);
+    margin: 0;
+  }
+
+  .seasonal-news {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .news-item {
+    display: flex; gap: 10px;
+    padding: 10px;
+    background: rgba(255,255,255,.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.05);
+    cursor: pointer;
+    transition: all .3s ease;
+  }
+  .news-item:hover {
+    background: rgba(255,255,255,.06);
+    transform: translateX(4px);
+  }
+  .news-date {
+    font-size: 12px; font-weight: 600;
+    color: var(--page-color);
+    min-width: 44px; text-align: center;
+    padding-top: 2px;
+  }
+  .news-content {
+    flex: 1; min-width: 0;
+  }
+  .news-title {
+    font-size: 12px; font-weight: 600;
+    margin: 0 0 4px; color: #fff;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .news-desc {
+    font-size: 11px; color: rgba(255,255,255,.5);
+    margin: 0;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  .seasonal-tips {
+    margin-top: 4px;
+  }
+  .tips-list {
+    display: flex; flex-wrap: wrap; gap: 10px;
+  }
+  .tip-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,.03);
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.05);
+    font-size: 12px;
+  }
+  .tip-icon { font-size: 14px; }
+  .tip-text { color: rgba(255,255,255,.8); }
   #itinerary .mute-toggle { z-index: 55; right: 14px; top: 14px; position: fixed; }
   #itinerary .itinerary-overlay {
     position: fixed; inset: 0; z-index: 0;
@@ -1348,18 +1662,21 @@
     border: 1px solid rgba(255,255,255,.12);
     box-shadow: inset 0 1px 2px rgba(0,0,0,.4), 0 6px 16px rgba(0,0,0,.35);
     flex-shrink: 0;
+    overflow: hidden;
   }
   .trip-seg-tabs .seg-tab {
     position: relative; z-index: 2;
-    padding: 8px 18px;
+    padding: 8px 12px;
     border: none; background: transparent;
     color: rgba(255,255,255,.72);
     font-size: 13px; font-weight: 600; letter-spacing: 2px;
-    display: inline-flex; align-items: center; gap: 6px;
+    display: inline-flex; align-items: center; gap: 4px;
     border-radius: 12px;
     cursor: pointer;
     transition: color .35s ease;
     font-family: inherit;
+    flex: 1;
+    justify-content: center;
   }
   .trip-seg-tabs .seg-tab .seg-icon { font-size: 15px; }
   .trip-seg-tabs .seg-tab:hover { color: #fff; }
@@ -1368,7 +1685,7 @@
     position: absolute; z-index: 1;
     top: 4px; left: 4px;
     height: calc(100% - 8px);
-    width: calc(50% - 4px);
+    width: calc(33.33% - 4px);
     border-radius: 12px;
     background: linear-gradient(160deg, var(--page-color), #fff);
     box-shadow: 0 8px 20px rgba(0,0,0,.45), 0 0 24px var(--page-color);
@@ -1377,6 +1694,9 @@
   }
   .trip-seg-tabs[data-active="smart"] .seg-indicator {
     transform: translateX(calc(100% + 8px));
+  }
+  .trip-seg-tabs[data-active="seasonal"] .seg-indicator {
+    transform: translateX(calc(200% + 16px));
   }
 
   .trip-hero-meta { display: flex; align-items: center; gap: 10px; position: relative; z-index: 1; }
@@ -1489,37 +1809,131 @@
   .route-btn .route-body em { font-size: 11px; font-style: normal; opacity: .75; letter-spacing: .5px; }
   .route-btn.active .route-body em { opacity: .85; }
 
-  /* Budget */
+  /* Budget - Enhanced */
+  .budget-card {
+    background: linear-gradient(145deg, rgba(30,32,42,.95), rgba(18,20,28,.95));
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 20px;
+    overflow: hidden;
+  }
   .budget-total-row {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 14px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, rgba(255,200,120,.14), rgba(255,160,80,.06));
-    border: 1px solid rgba(255,200,140,.25);
+    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(255,180,80,.18), rgba(255,140,60,.08));
+    border-bottom: 1px solid rgba(255,180,100,.2);
+    position: relative;
+    overflow: hidden;
   }
-  .budget-total-row span { font-size: 13px; color: #ffe5b8; font-weight: 600; letter-spacing: 2px; }
-  .budget-total-row .budget-total { font-size: 22px; color: #ffd080; font-weight: 800; }
+  .budget-total-row::before {
+    content: ''; position: absolute; top: -50%; right: -30%;
+    width: 100px; height: 100px;
+    background: radial-gradient(circle, rgba(255,200,100,.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .budget-total-row span { 
+    font-size: 14px; color: #ffe5b8; font-weight: 600; 
+    letter-spacing: 2px; text-transform: uppercase;
+    position: relative; z-index: 1;
+  }
+  .budget-total-row .budget-total { 
+    font-size: 28px; color: #ffd080; font-weight: 800; 
+    letter-spacing: -1px; text-shadow: 0 2px 8px rgba(255,180,80,.4);
+    position: relative; z-index: 1;
+    animation: budgetGlow 2s ease-in-out infinite;
+  }
+  @keyframes budgetGlow {
+    0%, 100% { text-shadow: 0 2px 8px rgba(255,180,80,.4); }
+    50% { text-shadow: 0 2px 16px rgba(255,180,80,.6), 0 0 20px rgba(255,180,80,.3); }
+  }
+  .budget-list {
+    padding: 8px 0;
+  }
   .budget-row {
     display: flex; justify-content: space-between; align-items: center;
-    font-size: 13px; color: rgba(255,255,255,.9);
-    padding: 6px 4px;
-    border-bottom: 1px dashed rgba(255,255,255,.08);
+    font-size: 14px; color: rgba(255,255,255,.9);
+    padding: 12px 20px;
+    transition: all .3s ease;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    cursor: pointer;
+  }
+  .budget-row:hover {
+    background: rgba(255,255,255,.03);
+    padding-left: 24px;
   }
   .budget-row:last-of-type { border-bottom: none; }
-  .budget-switch { position: relative; width: 36px; height: 20px; cursor: pointer; }
+  .budget-row-left {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .budget-icon {
+    width: 36px; height: 36px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    transition: all .3s ease;
+  }
+  .budget-row.active .budget-icon {
+    background: var(--page-color);
+    border-color: var(--page-color);
+    box-shadow: 0 4px 12px rgba(var(--page-color-rgb), .3);
+  }
+  .budget-info {
+    display: flex; flex-direction: column;
+  }
+  .budget-name { font-weight: 600; color: #fff; }
+  .budget-desc { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 2px; }
+  .budget-row-right {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .budget-price {
+    font-size: 16px; font-weight: 700; color: rgba(255,255,255,.7);
+    transition: all .3s ease;
+  }
+  .budget-row.active .budget-price {
+    color: var(--page-color);
+  }
+  .budget-switch { 
+    position: relative; width: 44px; height: 24px; cursor: pointer; 
+    flex-shrink: 0;
+  }
   .budget-switch input { opacity: 0; width: 0; height: 0; }
-  .budget-switch i {
+  .budget-switch-track {
     position: absolute; inset: 0;
-    background: rgba(255,255,255,.18);
-    border-radius: 20px; transition: .3s;
+    background: rgba(255,255,255,.1);
+    border-radius: 24px; 
+    transition: all .4s cubic-bezier(.4,0,.2,1);
+    border: 1px solid rgba(255,255,255,.08);
   }
-  .budget-switch i::before {
-    content: ''; position: absolute; left: 3px; top: 3px;
-    width: 14px; height: 14px; border-radius: 50%;
-    background: #fff; transition: .3s;
+  .budget-switch-track::after {
+    content: ''; position: absolute; left: 4px; top: 4px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; 
+    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    transition: all .4s cubic-bezier(.4,0,.2,1);
   }
-  .budget-switch input:checked + i { background: var(--page-color); }
-  .budget-switch input:checked + i::before { transform: translateX(16px); }
+  .budget-switch input:checked + .budget-switch-track { 
+    background: var(--page-color); 
+    border-color: var(--page-color);
+    box-shadow: 0 0 12px rgba(var(--page-color-rgb), .3);
+  }
+  .budget-switch input:checked + .budget-switch-track::after { 
+    transform: translateX(20px); 
+    background: #222;
+    box-shadow: 0 2px 6px rgba(0,0,0,.3);
+  }
+  .budget-progress {
+    height: 3px; background: rgba(255,255,255,.06);
+    margin: 0 20px 12px;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .budget-progress-bar {
+    height: 100%; 
+    background: linear-gradient(90deg, var(--page-color), rgba(255,200,100,.6));
+    border-radius: 2px;
+    transition: width .5s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 0 10px rgba(var(--page-color-rgb), .4);
+  }
 
   /* Weather */
   .wc-body {
@@ -1746,31 +2160,42 @@
   .route-meta-row b { color: #fff; font-weight: 700; }
   .timeline {
     flex: 0 1 auto;
-    display: flex; flex-direction: column; gap: 0;
-    padding: 4px 0 8px;
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 8px 0;
     max-height: none;
     overflow: visible;
     position: relative;
   }
   .timeline::before {
-    content: ''; position: absolute; left: 13px; top: 10px; bottom: 10px;
-    width: 2px;
-    background: linear-gradient(180deg, var(--page-color), rgba(255,255,255,.1));
-    border-radius: 2px;
+    content: ''; position: absolute; left: 30px; top: 8px; bottom: 8px;
+    width: 3px;
+    background: linear-gradient(180deg, var(--page-color), rgba(255,255,255,.15));
+    border-radius: 3px;
   }
   .t-item {
     position: relative;
-    padding: 10px 0 10px 38px;
-    display: flex; flex-direction: column; gap: 4px;
+    padding: 10px 12px 10px 70px;
+    display: flex; flex-direction: column; gap: 6px;
+    background: rgba(255,255,255,.04);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.08);
+    cursor: pointer;
+    transition: all .3s ease;
+  }
+  .t-item:hover {
+    background: rgba(255,255,255,.08);
+    border-color: rgba(255,255,255,.15);
+    transform: translateX(4px);
   }
   .t-item::before {
     content: attr(data-step);
-    position: absolute; left: 4px; top: 12px;
-    width: 22px; height: 22px; border-radius: 50%;
-    background: linear-gradient(160deg, var(--page-color), #fff);
-    color: #1a1a2a;
+    position: absolute; left: 18px; top: 50%;
+    transform: translateY(-50%);
+    width: 26px; height: 26px; border-radius: 50%;
+    background: linear-gradient(160deg, var(--page-color), rgba(255,255,255,.3));
+    color: #fff;
     display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 11px;
+    font-weight: 800; font-size: 10px;
     box-shadow: 0 4px 14px rgba(0,0,0,.4), 0 0 12px var(--page-color);
     z-index: 1;
   }
@@ -1888,6 +2313,20 @@
     background: rgba(255,255,255,.06); color: #fff;
     border: 1px solid rgba(255,255,255,.15); font-size: 14px;
     transition: all .3s;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+  .smart-form select option {
+    background: #1a1a28;
+    color: #fff;
+    padding: 10px 15px;
+  }
+  .smart-form select option:hover,
+  .smart-form select option:focus,
+  .smart-form select option:checked {
+    background: var(--page-color);
+    color: #000;
   }
   .smart-form input:focus, .smart-form select:focus {
     border-color: var(--page-color);
@@ -1989,22 +2428,328 @@
     .trip-hero-text h2 { font-size: 18px; letter-spacing: 2px; }
     .trip-hero-text p { font-size: 10px; letter-spacing: 4px; margin-top: 3px; }
     .trip-seg-tabs { order: 3; width: 100%; justify-content: space-between; }
-    .trip-seg-tabs .seg-tab { flex: 1; padding: 7px 10px; font-size: 12px; letter-spacing: 1px; }
-    .trip-seg-tabs .seg-indicator { min-width: 0; width: calc(50% - 8px); }
+    .trip-seg-tabs .seg-tab { flex: 1; padding: 7px 6px; font-size: 11px; letter-spacing: 0; }
+    .trip-seg-tabs .seg-tab .seg-icon { font-size: 12px; }
+    .trip-seg-tabs .seg-indicator { min-width: 0; width: calc(33.33% - 8px); }
+    .seasonal-highlights { grid-template-columns: 1fr; }
+    .seasonal-hero { padding: 16px; }
+    .seasonal-icon { font-size: 36px; }
     .meta-chip { min-width: 58px; padding: 6px 10px; }
     .meta-chip b { font-size: 12px; }
     .meta-chip em { font-size: 9px; letter-spacing: 1px; }
   }
-  #qa .video-bg { z-index: 0; }
   .qa-wrap {
-    position: absolute; inset: 0; z-index: 1;
-    display: flex; flex-direction: column;
-    padding: 60px 12px 80px;
-    gap: 8px;
-    overflow-y: auto;
+    position: relative; z-index: 1;
+    display: flex; flex-direction: row;
+    padding: 60px 16px 80px;
+    gap: 16px;
+    min-height: 100%;
+    box-sizing: border-box;
   }
   .qa-wrap::-webkit-scrollbar { width: 4px; }
   .qa-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); }
+
+  .qa-sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex; flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .qa-sidebar::-webkit-scrollbar { width: 2px; }
+  .qa-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 1px; }
+
+  .qa-main {
+    flex: 1;
+    display: flex; flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .qa-header {
+    flex-shrink: 0;
+    min-height: 130px;
+    display: flex; flex-direction: row; align-items: center;
+    padding: 24px 28px;
+    background: linear-gradient(135deg,
+      color-mix(in srgb, var(--page-color) 15%, rgba(15,10,35,.95)) 0%,
+      color-mix(in srgb, var(--page-color) 8%, rgba(25,15,50,.9)) 100%);
+    border-radius: 22px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid color-mix(in srgb, var(--page-color) 20%, transparent);
+    box-shadow: 0 4px 20px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+
+  .qa-carousel-section {
+    flex-shrink: 0;
+    min-height: 60px;
+  }
+
+  .qa-quick-tags {
+    flex-shrink: 0;
+    min-height: 40px;
+  }
+
+  .qa-chat-container {
+    flex: 3;
+    min-height: 300px;
+  }
+
+  .qa-avatar-section {
+    display: flex; align-items: center; gap: 24px;
+    width: 100%;
+  }
+
+  .qa-avatar-ring {
+    width: 90px; height: 90px; border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid color-mix(in srgb, var(--page-color) 30%, rgba(255,255,255,.2));
+    box-shadow: 0 0 14px color-mix(in srgb, var(--page-color) 20%, transparent), 0 1px 4px rgba(0,0,0,.15);
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .qa-avatar-ring::before {
+    content: '';
+    position: absolute; inset: -2px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, var(--page-color), #8b5cf6, #ec4899, var(--page-color));
+    animation: avatarRotate 8s linear infinite;
+    z-index: -1;
+    opacity: 0.4;
+  }
+
+  @keyframes avatarRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .qa-avatar-ring .girl-video-small {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+
+  .qa-greeting {
+    flex: 1;
+    display: flex; flex-direction: column;
+    gap: 8px;
+  }
+
+  .qa-greeting-title {
+    font-size: 25px; font-weight: 700;
+    color: #fff; margin: 0;
+    letter-spacing: 1.5px;
+  }
+
+  .qa-greeting-subtitle {
+    font-size: 14px; color: rgba(180,160,230,.6);
+    margin: 0;
+    letter-spacing: 0.5px;
+  }
+
+  .qa-greeting-text {
+    font-size: 15px; color: rgba(255,255,255,.85);
+    margin: 0; line-height: 1.6;
+    padding: 12px 18px;
+    background: rgba(255,255,255,.04);
+    border-radius: 14px;
+    border-left: 3px solid var(--page-color);
+    max-width: 85%;
+  }
+
+  .qa-chat-container {
+    flex: 1;
+    background: linear-gradient(180deg,
+      rgba(15,10,35,.7) 0%,
+      rgba(20,12,45,.6) 100%);
+    border-radius: 16px;
+    padding: 16px;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255,255,255,.08);
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .qa-chat-container::-webkit-scrollbar { width: 3px; }
+  .qa-chat-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+
+  .qa-quick-tags {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .qa-tag-label {
+    font-size: 12px; color: rgba(180,160,230,.5);
+    margin-left: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  .qa-tags-wrap {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+
+  .qa-tag {
+    padding: 6px 14px; border-radius: 16px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    color: rgba(255,255,255,.75);
+    font-size: 12px;
+    transition: all .25s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .qa-tag::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--page-color), #8b5cf6);
+    opacity: 0;
+    transition: opacity .25s;
+  }
+
+  .qa-tag:hover {
+    border-color: transparent;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--page-color) 30%, transparent);
+  }
+
+  .qa-tag:hover::before {
+    opacity: 1;
+  }
+
+  .qa-tag span {
+    position: relative;
+    z-index: 1;
+  }
+
+  .qa-footer-section {
+    padding: 16px 0;
+  }
+
+  .qa-footer-title {
+    font-size: 16px; font-weight: 700; color: rgba(255,255,255,.9);
+    text-align: center; margin-bottom: 12px;
+    letter-spacing: 4px;
+  }
+
+  .qa-history-section {
+    padding: 12px 0;
+  }
+
+  .qa-globe-section {
+    display: flex; flex-direction: column; gap: 8px;
+    background: rgba(15,10,35,.85);
+    border-radius: 12px;
+    padding: 12px;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255,255,255,.05);
+  }
+
+  .globe-wrap {
+    display: flex; justify-content: center;
+    padding: 4px 0;
+  }
+
+  .globe {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #2a1f4e, #0f0a20);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,.3), inset 0 0 12px rgba(0,0,0,.4);
+  }
+
+  .globe::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 40% 40%, rgba(255,255,255,.06), transparent 60%);
+  }
+
+  .globe-img {
+    width: 100%; height: 100%; object-fit: cover;
+    opacity: 0.3;
+  }
+
+  .globe-location {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #fff;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 2px;
+    z-index: 2;
+  }
+
+  .loc-pin {
+    font-size: 14px;
+    animation: pinBounce 2s ease-in-out infinite;
+  }
+
+  @keyframes pinBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  .loc-name {
+    font-size: 9px; font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0,0,0,.8);
+    background: rgba(0,0,0,.4);
+    padding: 1px 6px; border-radius: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .globe-landmarks {
+    position: absolute; inset: 0;
+    z-index: 1;
+  }
+
+  .lm-dot {
+    position: absolute;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--page-color);
+    border: 1px solid rgba(255,255,255,.6);
+    cursor: pointer;
+    transition: all .3s;
+    box-shadow: 0 0 4px var(--page-color);
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+
+  .lm-dot:hover, .lm-dot.active {
+    transform: scale(1.4);
+    box-shadow: 0 0 8px var(--page-color);
+    border-color: #fff;
+  }
+
+  @keyframes dotPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .globe-controls {
+    text-align: center;
+  }
+
+  .globe-title {
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,.8);
+    margin-bottom: 2px;
+    letter-spacing: 1px;
+  }
+
+  .globe-subtitle {
+    font-size: 9px; color: rgba(180,160,230,.4);
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+  }
+
+  .qa-carousel-section {
+    padding: 8px 0;
+  }
   .qa-title {
     text-align: center; font-size: 20px; font-weight: 800;
     letter-spacing: 6px; margin-bottom: 10px;
@@ -2372,31 +3117,38 @@
     font-size: 12px; color: rgba(220,200,255,.85); line-height: 1.5;
   }
   .timeline {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    position: relative;
+    padding-left: 40px;
   }
-  @media (max-width: 680px) {
-    .timeline { grid-template-columns: repeat(2, 1fr); }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    background: linear-gradient(180deg, var(--page-color), rgba(255,255,255,.15));
+    border-radius: 3px;
   }
   .timeline-item {
     position: relative;
-    padding: 12px 14px;
-    border-radius: 14px;
+    padding: 10px 12px;
+    border-radius: 12px;
     font-size: 12px;
-    background: linear-gradient(145deg,
-      rgba(140,100,200,.42) 0%,
-      rgba(60,35,110,.55) 100%);
+    background: rgba(255,255,255,.05);
     color: #fff;
-    border: 1px solid rgba(200,170,255,.35);
+    border: 1px solid rgba(255,255,255,.1);
     cursor: pointer;
-    transition: all .3s cubic-bezier(.4,0,.2,1);
-    font-weight: 700;
+    transition: all .3s ease;
+    font-weight: 600;
     letter-spacing: 1px;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 6px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 2px 10px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.05);
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -2405,66 +3157,69 @@
   .timeline-item::before {
     content: '';
     position: absolute;
-    top: 0; right: 0;
-    width: 60px; height: 60px;
-    background: radial-gradient(circle at top right, rgba(255,107,157,.35), transparent 70%);
-    pointer-events: none;
+    left: -34px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(160deg, var(--page-color), rgba(255,255,255,.3));
+    box-shadow: 0 0 12px var(--page-color), 0 2px 8px rgba(0,0,0,.3);
+    z-index: 1;
   }
   .timeline-item .t-year {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 800;
     color: var(--page-color);
-    text-shadow: 0 0 12px color-mix(in srgb, var(--page-color) 55%, transparent);
-    letter-spacing: 2px;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--page-color) 50%, transparent);
+    letter-spacing: 1px;
   }
   .timeline-item .t-title {
-    font-size: 12.5px;
-    color: #fff;
-    font-weight: 700;
+    font-size: 11.5px;
+    color: rgba(255,255,255,.9);
+    font-weight: 600;
     line-height: 1.4;
     text-shadow: 0 1px 3px rgba(0,0,0,.5);
   }
   .timeline-item .t-news {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    margin-top: 4px;
-    padding-top: 6px;
-    border-top: 1px dashed rgba(255,255,255,.2);
+    gap: 2px;
+    margin-top: 3px;
+    padding-top: 4px;
+    border-top: 1px dashed rgba(255,255,255,.15);
   }
   .timeline-item .t-news a {
     display: block;
-    font-size: 10.5px;
+    font-size: 10px;
     color: #c8ddff;
     text-decoration: none;
-    padding: 3px 6px;
-    background: rgba(139,207,255,.1);
-    border-radius: 6px;
+    padding: 2px 5px;
+    background: rgba(139,207,255,.08);
+    border-radius: 4px;
     transition: all .25s;
-    border-left: 2px solid rgba(139,207,255,.4);
+    border-left: 2px solid rgba(139,207,255,.3);
     line-height: 1.4;
   }
   .timeline-item .t-news a:hover {
-    background: rgba(255,215,150,.2);
+    background: rgba(255,215,150,.15);
     color: #ffd79a;
     border-left-color: #ffd79a;
-    transform: translateX(3px);
+    transform: translateX(2px);
   }
   .timeline-item:hover {
-    background: linear-gradient(145deg,
-      color-mix(in srgb, var(--page-color) 55%, transparent) 0%,
-      color-mix(in srgb, var(--page-color) 25%, #2a1246) 100%);
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 12px 28px rgba(0,0,0,.5), 0 0 24px color-mix(in srgb, var(--page-color) 45%, transparent);
-    border-color: color-mix(in srgb, var(--page-color) 60%, white);
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.2);
+    transform: translateX(3px);
+    box-shadow: 0 4px 16px rgba(0,0,0,.3), 0 0 16px color-mix(in srgb, var(--page-color) 25%, transparent);
   }
   .timeline-item.active {
-    background: linear-gradient(145deg,
-      color-mix(in srgb, var(--page-color) 65%, #ff6b9d) 0%,
-      color-mix(in srgb, var(--page-color) 45%, #9a2ad4) 100%);
-    transform: translateY(-3px) scale(1.03);
-    box-shadow: 0 14px 30px rgba(0,0,0,.55), 0 0 30px color-mix(in srgb, var(--page-color) 55%, transparent);
-    border-color: color-mix(in srgb, var(--page-color) 70%, white);
+    background: linear-gradient(135deg,
+      color-mix(in srgb, var(--page-color) 40%, rgba(255,255,255,.1)) 0%,
+      color-mix(in srgb, var(--page-color) 20%, rgba(40,25,70,.9)) 100%);
+    border-color: color-mix(in srgb, var(--page-color) 50%, white);
+    transform: translateX(3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,.4), 0 0 20px color-mix(in srgb, var(--page-color) 35%, transparent);
   }
   .timeline-news {
     margin-top: 10px; display: none;
@@ -2667,15 +3422,17 @@
       <button data-season="autumn">秋</button>
       <button data-season="winter">冬</button>
     </div>
+    <button class="mute-toggle" id="muteToggle" title="静音切换">🔇</button>
   </div>
+
+  <!-- Global Video Background -->
+  <video class="video-bg" id="globalVideo" src="./Assets/video/bj.mp4" autoplay loop muted playsinline preload="auto"></video>
 
   <!-- ============ HOME ============ -->
   <section class="page active" id="home">
-    <video class="video-bg" id="homeVid" src="./Assets/video/bj.mp4" autoplay loop muted playsinline preload="auto" poster="./Assets/images/map/Summer_map.png"></video>
-    <div class="home-splash" id="homeSplash">
+    <div class="home-splash hide" id="homeSplash">
       <span class="splash-ch">台</span><span class="splash-ch">州</span><span class="splash-ch">府</span><span class="splash-ch">城</span><span class="splash-ch">旅</span><span class="splash-ch">游</span><span class="splash-ch">区</span>
     </div>
-    <button class="mute-toggle" id="muteToggle" title="静音切换">🔊</button>
     <div class="home-season-decor" id="homeSeasonDecor"></div>
     <div class="home-overlay">
       <div class="home-header">
@@ -2695,7 +3452,7 @@
   <!-- ============ SCENIC ============ -->
   <section class="page" id="scenic">
     <div class="map-wrap" id="mapWrap">
-      <img class="map-img" id="mapImg" src="./Assets/images/map/Summer_map.png" alt="台州府城地图" draggable="false" onerror="this.src='./Assets/images/map/Summer_map.jpg'">
+      <img class="map-img" id="mapImg" src="./Assets/images/map/Summer_map.png" alt="台州府城地图" draggable="false" onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='./Assets/images/map/Summer_map.jpg';}">
       <div class="map-layer" id="mapLayer"></div>
       <div class="drift-indicator" id="driftIndicator"><span class="dot"></span><span id="driftStatus">自动漫游中</span></div>
     </div>
@@ -2709,6 +3466,7 @@
     <!-- Legend / quick navigation panels -->
     <div class="scenic-panels" id="scenicPanels">
       <div class="scenic-panel">
+        <div class="scenic-panel-hint">👆 点击下方导航栏查看详情</div>
         <div class="scenic-panel-title">三大景区</div>
         <div class="scenic-panel-list" id="areaList"></div>
       </div>
@@ -2747,16 +3505,14 @@
 
   <!-- ============ ITINERARY ============ -->
   <section class="page" id="itinerary">
-    <video class="video-bg" src="./Assets/video/bj.mp4" autoplay loop muted playsinline></video>
     <div class="itinerary-overlay"></div>
-    <button class="mute-toggle" id="itineraryMute" title="静音切换">🔊</button>
     <div class="itinerary-wrap">
       <!-- 主内容 -->
       <div class="itinerary-main">
         <!-- 滚动提示 -->
         <div class="scroll-hint" id="itScrollHint" aria-hidden="true">
           <div class="arrow">↓</div>
-          <span>向下滑动查看完整行程</span>
+          <span>向下滑动查看更多信息</span>
         </div>
 
         <!-- 顶部 Hero (集成 Tab + 天气) -->
@@ -2779,6 +3535,10 @@
             <button class="seg-tab" data-tab="smart">
               <span class="seg-icon">🤖</span>
               <span class="seg-text">智能推荐</span>
+            </button>
+            <button class="seg-tab" data-tab="seasonal">
+              <span class="seg-icon" id="seasonTabIcon">🌸</span>
+              <span class="seg-text">当季打卡</span>
             </button>
             <span class="seg-indicator" aria-hidden="true"></span>
           </div>
@@ -2817,13 +3577,66 @@
               <div class="ink-card budget-card">
                 <div class="ink-card-head"><span>②</span>预算估算</div>
                 <div class="budget-total-row">
-                  <span>合计</span>
+                  <span>合计预算</span>
                   <b class="budget-total" id="budgetTotal">¥0</b>
                 </div>
-                <div class="budget-row"><span>🎫 门票</span><label class="budget-switch"><input type="checkbox" checked data-budget="ticket"><i></i></label></div>
-                <div class="budget-row"><span>🍜 餐饮</span><label class="budget-switch"><input type="checkbox" checked data-budget="food"><i></i></label></div>
-                <div class="budget-row"><span>🚌 交通</span><label class="budget-switch"><input type="checkbox" data-budget="trans"><i></i></label></div>
-                <div class="budget-row"><span>🎁 纪念品</span><label class="budget-switch"><input type="checkbox" data-budget="gift"><i></i></label></div>
+                <div class="budget-list">
+                  <div class="budget-row active" data-budget-item="ticket">
+                    <div class="budget-row-left">
+                      <div class="budget-icon">🎫</div>
+                      <div class="budget-info">
+                        <span class="budget-name">门票费用</span>
+                        <span class="budget-desc">景点门票及讲解服务</span>
+                      </div>
+                    </div>
+                    <div class="budget-row-right">
+                      <span class="budget-price" id="budgetTicket">¥70</span>
+                      <label class="budget-switch"><input type="checkbox" checked data-budget="ticket"><span class="budget-switch-track"></span></label>
+                    </div>
+                  </div>
+                  <div class="budget-row active" data-budget-item="food">
+                    <div class="budget-row-left">
+                      <div class="budget-icon">🍜</div>
+                      <div class="budget-info">
+                        <span class="budget-name">餐饮美食</span>
+                        <span class="budget-desc">特色小吃及正餐</span>
+                      </div>
+                    </div>
+                    <div class="budget-row-right">
+                      <span class="budget-price" id="budgetFood">¥80</span>
+                      <label class="budget-switch"><input type="checkbox" checked data-budget="food"><span class="budget-switch-track"></span></label>
+                    </div>
+                  </div>
+                  <div class="budget-row" data-budget-item="trans">
+                    <div class="budget-row-left">
+                      <div class="budget-icon">🚌</div>
+                      <div class="budget-info">
+                        <span class="budget-name">交通出行</span>
+                        <span class="budget-desc">公交/打车费用</span>
+                      </div>
+                    </div>
+                    <div class="budget-row-right">
+                      <span class="budget-price" id="budgetTrans">¥20</span>
+                      <label class="budget-switch"><input type="checkbox" data-budget="trans"><span class="budget-switch-track"></span></label>
+                    </div>
+                  </div>
+                  <div class="budget-row" data-budget-item="gift">
+                    <div class="budget-row-left">
+                      <div class="budget-icon">🎁</div>
+                      <div class="budget-info">
+                        <span class="budget-name">纪念品</span>
+                        <span class="budget-desc">特色手工艺品</span>
+                      </div>
+                    </div>
+                    <div class="budget-row-right">
+                      <span class="budget-price" id="budgetGift">¥60</span>
+                      <label class="budget-switch"><input type="checkbox" data-budget="gift"><span class="budget-switch-track"></span></label>
+                    </div>
+                  </div>
+                </div>
+                <div class="budget-progress">
+                  <div class="budget-progress-bar" id="budgetProgress" style="width: 0%"></div>
+                </div>
               </div>
 
               <div class="ink-card weather-card" id="weatherCard">
@@ -2832,7 +3645,7 @@
                   <div class="date-picker-wrap" data-target="main">
                     <button class="date-picker-trigger" type="button">
                       <span class="dp-icon">📅</span>
-                      <span class="dp-label" data-label>选择日期</span>
+                      <span class="dp-label" data-label>今天</span>
                     </button>
                     <div class="date-picker-panel" data-panel>
                       <div class="dp-nav">
@@ -2908,14 +3721,7 @@
                   </div>
                 </div>
 
-                <div class="ink-card qa-card route-qa-inline">
-                  <div class="ink-card-head"><span>⑦</span>关于此路线</div>
-                  <div class="qa-mini-row">
-                    <input type="text" id="routeQAInput" placeholder="问我：带老人合适吗？门票多少？">
-                    <button id="routeQASend">问</button>
-                  </div>
-                  <div class="qa-mini-ans" id="routeQAAns"></div>
-                </div>
+
               </div>
             </div>
           </div>
@@ -2956,7 +3762,7 @@
                   <div class="date-picker-wrap" data-target="smart">
                     <button class="date-picker-trigger" type="button">
                       <span class="dp-icon">📅</span>
-                      <span class="dp-label" data-label>选择日期</span>
+                      <span class="dp-label" data-label>今天</span>
                     </button>
                     <div class="date-picker-panel" data-panel>
                       <div class="dp-nav">
@@ -2997,13 +3803,94 @@
                 </div>
               </div>
 
-              <div class="ink-card qa-card qa-mini-lg">
-                <div class="ink-card-head"><span>💬</span>继续追问</div>
-                <div class="qa-mini-row">
-                  <input type="text" id="smartQAInput" placeholder="对结果有疑问？如：第一天中午去哪吃？">
-                  <button id="smartQASend">追问</button>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- 当季打卡 -->
+        <div class="tab-pane" id="tab-seasonal" style="display:none;">
+          <div class="seasonal-layout">
+            <div class="seasonal-hero">
+              <div class="seasonal-title-row">
+                <span class="seasonal-icon" id="seasonalIcon">🌸</span>
+                <div class="seasonal-title-wrap">
+                  <h3 class="seasonal-title" id="seasonalTitle">春季赏花</h3>
+                  <p class="seasonal-subtitle" id="seasonalSubtitle">三月至五月 · 繁花似锦的古城</p>
                 </div>
-                <div class="qa-mini-ans" id="smartQAAns"></div>
+              </div>
+              <div class="seasonal-desc" id="seasonalDesc">春日的台州府城，樱花、桃花、油菜花竞相绽放，漫步在千年古城墙下，仿佛穿越时空回到了诗意盎然的江南。</div>
+            </div>
+
+            <div class="seasonal-highlights">
+              <div class="ink-card seasonal-card">
+                <div class="ink-card-head"><span>🌟</span>必打卡景点</div>
+                <div class="seasonal-spots" id="seasonalSpots">
+                  <div class="seasonal-spot-card">
+                    <div class="spot-img-wrap">
+                      <img src="./Assets/images/map/Spring_map.png" alt="赏花地点">
+                      <div class="spot-tag">推荐</div>
+                    </div>
+                    <div class="spot-info">
+                      <h4 class="spot-name">紫阳街樱花</h4>
+                      <p class="spot-desc">古街两旁樱花盛开，粉白相间，美不胜收</p>
+                      <div class="spot-meta">
+                        <span class="meta-item">📍 紫阳街中段</span>
+                        <span class="meta-item">⏰ 3-4月</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ink-card seasonal-card">
+                <div class="ink-card-head"><span>🎬</span>精彩视频</div>
+                <div class="seasonal-videos" id="seasonalVideos">
+                  <div class="video-card">
+                    <div class="video-thumb">
+                      <img src="./Assets/images/map/Spring_map.png" alt="视频封面">
+                      <div class="video-play-btn">▶</div>
+                      <span class="video-duration">02:30</span>
+                    </div>
+                    <div class="video-info">
+                      <h4 class="video-title">春日府城 · 樱花烂漫</h4>
+                      <p class="video-channel">台州文旅官方视频号</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ink-card seasonal-card">
+                <div class="ink-card-head"><span>📰</span>季节资讯</div>
+                <div class="seasonal-news" id="seasonalNews">
+                  <div class="news-item">
+                    <div class="news-date">03-15</div>
+                    <div class="news-content">
+                      <h4 class="news-title">台州府城春季赏花季盛大开启</h4>
+                      <p class="news-desc">一年一度的赏花季活动已经拉开帷幕，古城墙下樱花如雪，吸引众多游客前来打卡...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="seasonal-tips">
+              <div class="ink-card">
+                <div class="ink-card-head"><span>💡</span>游玩小贴士</div>
+                <div class="tips-list" id="seasonalTips">
+                  <div class="tip-item">
+                    <span class="tip-icon">📷</span>
+                    <span class="tip-text">最佳拍摄时间：清晨6-8点，光线柔和</span>
+                  </div>
+                  <div class="tip-item">
+                    <span class="tip-icon">👕</span>
+                    <span class="tip-text">建议穿着浅色衣物，与花海更配</span>
+                  </div>
+                  <div class="tip-item">
+                    <span class="tip-icon">🚗</span>
+                    <span class="tip-text">赏花高峰期建议绿色出行，停车较紧张</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -3014,57 +3901,76 @@
 
   <!-- ============ Q&A ============ -->
   <section class="page" id="qa">
-    <video class="video-bg" src="./Assets/video/bj.mp4" autoplay loop muted playsinline></video>
     <div class="qa-wrap">
 
-      <!-- 顶部：地球漫游导航 -->
-      <div class="qa-globe-section" id="qaGlobeSection">
-        <div class="globe-wrap" id="globeWrap">
-          <div class="globe" id="globe">
-            <img class="globe-img" src="./Assets/images/globe.jpg" alt="地球" onerror="this.style.display='none';">
-            <div class="globe-location" id="globeLocation">
-              <span class="loc-pin">📍</span>
-              <span class="loc-name">台州府城</span>
+      <!-- 左侧栏：历史时间线 -->
+      <div class="qa-sidebar">
+        <div class="qa-globe-section" id="qaGlobeSection">
+          <div class="globe-wrap" id="globeWrap">
+            <div class="globe" id="globe">
+              <img class="globe-img" src="./Assets/images/globe.jpg" alt="地球" onerror="this.style.display='none';">
+              <div class="globe-location" id="globeLocation">
+                <span class="loc-pin">📍</span>
+                <span class="loc-name">台州府城</span>
+              </div>
+              <div class="globe-landmarks" id="globeLandmarks"></div>
             </div>
-            <div class="globe-landmarks" id="globeLandmarks"></div>
+          </div>
+          <div class="globe-controls">
+            <div class="globe-title" id="globeTitle">🌍 历史导航</div>
+            <div class="globe-subtitle" id="globeSubtitle">点击年份查看历史事件</div>
+            <div class="timeline" id="timeline"></div>
           </div>
         </div>
-        <div class="globe-controls">
-          <div class="globe-title" id="globeTitle">🌍 从高空俯瞰 · 飞入台州府城</div>
-          <div class="globe-subtitle" id="globeSubtitle">点击年份查看历史事件 · 新闻链接可直接跳转</div>
-          <div class="timeline" id="timeline"></div>
-        </div>
       </div>
 
-      <!-- 中部：知识卡片轮播 -->
-      <div class="qa-title">府城文化 · 知识长廊</div>
-      <div class="qa-carousel-wrap">
-        <button class="qa-nav-btn prev" id="qaPrev">‹</button>
-        <div class="qa-carousel" id="qaCarousel"></div>
-        <button class="qa-nav-btn next" id="qaNext">›</button>
-      </div>
-
-      <!-- 花州州小导游 -->
-      <div class="girl-guide">
-        <video class="girl-video-small" src="./Assets/video/girl.mp4" autoplay loop muted playsinline></video>
-        <div class="girl-bubble">
-          <b>花州州：</b>
-          <span id="girlBubbleText">了解了这些历史，您还想知道台州府城的什么呢？</span>
+      <!-- 右侧主区域 -->
+      <div class="qa-main">
+        <div class="qa-header">
+          <div class="qa-avatar-section">
+            <div class="qa-avatar-ring">
+              <video class="girl-video-small" src="./Assets/video/girl.mp4" autoplay loop muted playsinline></video>
+            </div>
+            <div class="qa-greeting">
+              <h2 class="qa-greeting-title">🌸 花州州</h2>
+              <p class="qa-greeting-subtitle">您的台州府城专属智能导游</p>
+              <p class="qa-greeting-text" id="girlBubbleText">您好！有什么关于台州府城的问题都可以问我哦~</p>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- 底部：输入框 -->
-      <div class="qa-chat-area" id="qaChatArea"></div>
-      <div class="qa-input-bar">
-        <div class="qa-side-controls">
-          <button id="voiceRateBtn" title="语速">🐢</button>
-          <label title="语音朗读">
-            🔊
-            <input type="checkbox" id="voiceToggle" checked>
-          </label>
+        <div class="qa-carousel-section">
+          <div class="qa-title">府城文化 · 知识长廊</div>
+          <div class="qa-carousel-wrap">
+            <button class="qa-nav-btn prev" id="qaPrev">‹</button>
+            <div class="qa-carousel" id="qaCarousel"></div>
+            <button class="qa-nav-btn next" id="qaNext">›</button>
+          </div>
         </div>
-        <input type="text" id="qaInput" placeholder="请输入您想了解的问题，例如：东湖的最佳游览时间是什么时候？">
-        <button class="qa-send" id="qaSend">发送</button>
+
+        <div class="qa-quick-tags">
+          <span class="qa-tag-label">💡 热门问题</span>
+          <div class="qa-tags-wrap">
+            <button class="qa-tag" onclick="sendQuickQuestion('台州府城有哪些必去景点？')">必去景点</button>
+            <button class="qa-tag" onclick="sendQuickQuestion('台州府城的美食推荐？')">美食推荐</button>
+            <button class="qa-tag" onclick="sendQuickQuestion('台州府城门票多少钱？')">门票价格</button>
+            <button class="qa-tag" onclick="sendQuickQuestion('台州府城历史由来？')">历史由来</button>
+            <button class="qa-tag" onclick="sendQuickQuestion('台州府城最佳旅游时间？')">最佳时间</button>
+            <button class="qa-tag" onclick="sendQuickQuestion('台州府城住宿推荐？')">住宿推荐</button>
+          </div>
+        </div>
+
+        <div class="qa-chat-container">
+          <div class="qa-chat-area" id="qaChatArea"></div>
+        </div>
+
+        <div class="qa-input-bar">
+          <div class="qa-side-controls">
+            <button id="voiceToggle" title="点击静音朗读" class="voice-on">🔊</button>
+          </div>
+          <input type="text" id="qaInput" placeholder="请输入您的问题...">
+          <button class="qa-send" id="qaSend">发送</button>
+        </div>
       </div>
 
     </div>
@@ -3103,12 +4009,20 @@
     <div class="modal vr-modal">
       <button class="modal-close" id="vrClose">✕</button>
       <h2 id="vrTitle">VR 全景体验</h2>
-      <div class="vr-frame-wrap" id="vrFrameWrap">
-        <div class="vr-fallback" id="vrFallback">
-          <div class="vr-loading-spinner"></div>
-          <p class="vr-loading-text">正在加载 VR 全景…</p>
-          <p class="vr-fallback-tip" id="vrFallbackTip" style="display:none;">若内嵌预览加载失败，请点击下方按钮在新窗口打开 VR。</p>
-          <button class="vr-open-external" id="vrOpenExternal" style="display:none;">🌐 在新窗口打开 VR 全景</button>
+      <div class="vr-controls">
+        <button class="vr-zoom-btn" id="vrZoomIn" title="放大">🔍+</button>
+        <button class="vr-zoom-btn" id="vrZoomOut" title="缩小">🔍-</button>
+        <button class="vr-zoom-btn" id="vrZoomReset" title="重置">↺</button>
+        <span class="vr-zoom-level" id="vrZoomLevel">100%</span>
+      </div>
+      <div class="vr-frame-container" id="vrFrameContainer">
+        <div class="vr-frame-wrap" id="vrFrameWrap">
+          <div class="vr-fallback" id="vrFallback">
+            <div class="vr-loading-spinner"></div>
+            <p class="vr-loading-text">正在加载 VR 全景…</p>
+            <p class="vr-fallback-tip" id="vrFallbackTip" style="display:none;">若内嵌预览加载失败，请点击下方按钮在新窗口打开 VR。</p>
+            <button class="vr-open-external" id="vrOpenExternal" style="display:none;">🌐 在新窗口打开 VR 全景</button>
+          </div>
         </div>
       </div>
       <div class="modal-text-wrap">
@@ -3169,7 +4083,7 @@ try { window.onerror = function(){ return true; }; } catch(e){}
 var state = {
   currentPage: 'home',
   season: 'summer',
-  muted: true,
+  muted: false,
   map: { scale: 1, tx: 0, ty: 0, minScale: 1, maxScale: 2, initialized: false },
   currentAttraction: null,
   currentText: '',
@@ -3224,7 +4138,7 @@ function speak(text, rate){
     return;
   }
 
-  var zhVoice = 'zh-CN-XiaoxiaoNeural';
+  var zhVoice = 'zh-CN-XiaoyiNeural';
   var url = 'https://tts.pollinations.ai/listen?text=' + encodeURIComponent(text) + '&voice=' + zhVoice + '&speed=' + (rate || state.voiceRate || 1);
 
   try {
@@ -3256,10 +4170,11 @@ function fallbackSpeak(text, rate, ind, onEnd){
     var u = new SpeechSynthesisUtterance(text);
     u.lang = 'zh-CN';
     u.rate = rate || state.voiceRate || 1;
-    u.pitch = 1;
+    u.pitch = 1.2;
     var voices = window.speechSynthesis.getVoices();
-    var zh = voices.find(function(v){ return /zh|cmn|Chinese/i.test(v.lang + ' ' + v.name); });
-    if (zh) u.voice = zh;
+    var zhFemale = voices.find(function(v){ return /zh-CN/i.test(v.lang) && /female|xiaoyi|xiaoxiao|yunxi/i.test(v.name.toLowerCase()); }) ||
+                   voices.find(function(v){ return /zh|cmn|Chinese/i.test(v.lang + ' ' + v.name); });
+    if (zhFemale) u.voice = zhFemale;
     u.onstart = pauseVideo;
     u.onend = onEnd;
     u.onerror = onEnd;
@@ -3268,12 +4183,10 @@ function fallbackSpeak(text, rate, ind, onEnd){
   } catch(e){}
 }
 function pauseVideo(){
-  $$('video').forEach(function(v){ try { v.pause(); } catch(e){} });
+  var v = $('#globalVideo'); if (v) try { v.pause(); } catch(e){}
 }
 function resumeVideo(){
-  if (state.currentPage === 'home') { var v = $('#homeVid'); if (v && !state.muted) { try { v.play(); } catch(e){} } }
-  if (state.currentPage === 'itinerary') { var vs = $('#itinerary').querySelectorAll('video'); vs.forEach(function(v){ try { v.play(); } catch(e){} }); }
-  if (state.currentPage === 'qa') { var vq = $('#qa').querySelectorAll('video'); vq.forEach(function(v){ try { v.play(); } catch(e){} }); }
+  var v = $('#globalVideo'); if (v && !state.muted) try { v.play(); } catch(e){}
 }
 
 /* ------- 页面切换 ------- */
@@ -3288,56 +4201,34 @@ function goto(page){
   pg.style.animation = '';
   $$('.nav-item').forEach(function(n){ n.classList.toggle('active', n.dataset.goto === page); });
 
-  // 视频控制
+  // 视频控制 - globalVideo始终播放，静音只控制声音不暂停
+  var v = $('#globalVideo');
+  if (v) { try { v.play(); } catch(e){} }
   if (page === 'home') {
-    var v = $('#homeVid');
-    if (v && !state.muted) { try { v.play(); } catch(e){} }
-    // Re-trigger the splash animation
-    var splash = $('#homeSplash');
-    splash.classList.remove('hide');
-    // force reflow to restart per-char animations
-    var clone = splash.cloneNode(true);
-    splash.parentNode.replaceChild(clone, splash);
-    clone.id = 'homeSplash';
-    // re-apply per-char animation delays
-    var chs = clone.querySelectorAll('.splash-ch');
-    var delays = [0, .15, .30, .45, .60, .75, .90];
-    chs.forEach(function(c, i){ c.style.animationDelay = delays[i] + 's'; });
-    // hide splash after 5 seconds total
-    clearTimeout(state._splashT);
-    state._splashT = setTimeout(function(){ clone.classList.add('hide'); }, 5000);
-    // (Re)build season decorations
     buildSeasonDecor();
-  } else {
-    var h = $('#homeVid'); if (h) h.pause();
   }
   if (page === 'itinerary') {
-    $('#itinerary').querySelectorAll('video').forEach(function(v){ if (!state.muted) try { v.play(); } catch(e){} });
     updateRouteMap();
     if (!state._weatherInit) { state._weatherInit = true; initWeather(); }
-    // 回到顶部
     $('#itinerary').scrollTop = 0;
-    // 显示滚动提示
     var hint = $('#itScrollHint');
     if (hint) hint.classList.remove('hide');
-  } else {
-    $('#itinerary').querySelectorAll('video').forEach(function(v){ try { v.pause(); } catch(e){} });
   }
   if (page === 'scenic') {
     // Always re-init map when entering scenic page to ensure correct dimensions
-    // Use setTimeout to ensure the page is fully rendered
-    setTimeout(function(){
-      if (state.currentPage === 'scenic') {
-        var wrap = $('#mapWrap');
-        if (wrap && wrap.clientWidth > 0) {
-          initMap();
-        } else {
-          requestAnimationFrame(function(){
-            if (state.currentPage === 'scenic') initMap();
-          });
-        }
+    // Use requestAnimationFrame + multiple retries for slow machines
+    var scenicRetries = 0;
+    var scenicInit = function(){
+      if (state.currentPage !== 'scenic') return;
+      var wrap = $('#mapWrap');
+      if (wrap && wrap.clientWidth > 0 && wrap.clientHeight > 0) {
+        initMap(true);
+      } else if (scenicRetries < 10) {
+        scenicRetries++;
+        requestAnimationFrame(function(){ setTimeout(scenicInit, 80); });
       }
-    }, 50);
+    };
+    requestAnimationFrame(function(){ setTimeout(scenicInit, 50); });
   } else {
     stopAutoDrift();
     stopCarousel();
@@ -3355,6 +4246,18 @@ function goto(page){
 $$('.nav-item, .home-btn').forEach(function(el){
   el.addEventListener('click', function(){ goto(el.dataset.goto); });
 });
+
+(function(){
+  console.log('[天气API] 页面加载完成，初始化天气模块...');
+  loadWeather();
+  if (state.currentPage === 'itinerary') {
+    initWeather();
+  } else {
+    setTimeout(function(){
+      if (state.currentPage === 'itinerary') initWeather();
+    }, 500);
+  }
+})();
 
 /* ------- 首页季节装饰 ------- */
 function buildSeasonDecor(){
@@ -3390,15 +4293,20 @@ function setSeason(sec){
   // Update route map image
   if (currentRoute) updateRouteMap();
 
-  // Update home video poster for current season
-  var homeVid = $('#homeVid');
-  if (homeVid) {
-    homeVid.poster = './Assets/images/map/' + cap(sec) + '_map.png';
-  }
-
   updateRouteMap();
   renderQACards();
   if (state.currentPage === 'home') buildSeasonDecor();
+  
+  var seasonTabIcon = $('#seasonTabIcon');
+  if (seasonTabIcon) {
+    var data = SEASON_DATA[sec];
+    if (data) seasonTabIcon.textContent = data.icon;
+  }
+  
+  if (state.currentPage === 'itinerary' && $('#tab-seasonal').style.display !== 'none') {
+    renderSeasonalContent();
+  }
+  
   showToast('季节已切换至：' + ({spring:'春',summer:'夏',autumn:'秋',winter:'冬'})[sec]);
 }
 function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -3409,9 +4317,13 @@ $$('#seasonSwitch button').forEach(function(b){
 /* ------- 静音切换 ------- */
 $('#muteToggle').addEventListener('click', function(){
   state.muted = !state.muted;
-  $('#homeVid').muted = state.muted;
+  localStorage.setItem('__MUTED__', state.muted.toString());
+  var v = $('#globalVideo');
+  if (v) {
+    v.muted = state.muted;
+    if (!state.muted) try { v.play(); } catch(e){}
+  }
   $('#muteToggle').textContent = state.muted ? '🔇' : '🔊';
-  if (!state.muted) try { $('#homeVid').play(); } catch(e){}
 });
 
 /* ------- 本地智能问答引擎（纯正中文，零延迟，无乱码） ------- */
@@ -3500,50 +4412,230 @@ async function aiChat(prompt){
   if(local) return local;
   var isOffline = location.protocol === 'file:' || !navigator.onLine;
   if (isOffline) {
-    return '当前处于离线模式，云端AI问答需要联网。您可以直接点击左侧推荐问题，或在联网状态下提问我。';
+    return '当前处于离线模式，云端AI问答需要联网。您可以直接点击快捷问题，或在联网状态下提问我。';
   }
+  
+  var systemPrompt = '你是一个知识渊博、聪明机智的AI助手花州州，可以回答任何问题。请用中文回答，语气亲切友好。';
+  
+  var apis = [
+    {
+      url: 'https://api.deepseek.com/v1/chat/completions',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer sk-deepseek-ai' },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [{role: 'system', content: systemPrompt}, {role: 'user', content: prompt}]
+      })
+    },
+    {
+      url: 'https://freeapi.xyhelper.cn/v1/chat/completions',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [{role: 'system', content: systemPrompt}, {role: 'user', content: prompt}]
+      })
+    },
+    {
+      url: 'https://api.chatanywhere.cn/v1/chat/completions',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [{role: 'system', content: systemPrompt}, {role: 'user', content: prompt}]
+      })
+    },
+    {
+      url: 'https://api.moonshot.cn/v1/chat/completions',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'moonshot-v1-8k',
+        messages: [{role: 'system', content: systemPrompt}, {role: 'user', content: prompt}]
+      })
+    },
+    {
+      url: 'https://api.openrouter.ai/api/v1/chat/completions',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer or-1234567890' },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [{role: 'system', content: systemPrompt}, {role: 'user', content: prompt}]
+      })
+    }
+  ];
+  
+  for (var i = 0; i < apis.length; i++) {
+    try {
+      console.log('[AI API] 尝试API ' + (i+1) + ': ' + apis[i].url);
+      var resp = await fetch(apis[i].url, {
+        method: 'POST',
+        headers: apis[i].headers,
+        body: apis[i].body,
+        signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined,
+        mode: 'cors'
+      });
+      console.log('[AI API] API ' + (i+1) + ' 响应状态:', resp.status);
+      if (resp.ok) {
+        var data = await resp.json();
+        if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+          var t = cleanAI(data.choices[0].message.content);
+          if (t && t.length > 5 && /[\u4e00-\u9fa5]/.test(t)) {
+            console.log('[AI API] API ' + (i+1) + ' 成功:', t.slice(0, 50) + '...');
+            return t;
+          }
+        }
+      }
+    } catch(e) {
+      console.log('[AI API] 尝试API ' + (i+1) + ' 失败:', e.message);
+    }
+  }
+  
   try {
-    var resp = await fetch('https://text.pollinations.ai/' + encodeURIComponent('请用简体中文回答：' + (prompt||'').slice(0,2000)), {signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined, mode: 'cors'});
+    console.log('[AI API] 尝试Pollinations API...');
+    var resp = await fetch('https://text.pollinations.ai/' + encodeURIComponent(systemPrompt + ' 请回答：' + (prompt||'').slice(0,2000)), {
+      signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined,
+      mode: 'cors'
+    });
     if(resp.ok){
       var t = await resp.text();
       t = cleanAI(t);
-      if(t && t.length > 10 && /[\u4e00-\u9fa5]/.test(t)) return t;
+      if(t && t.length > 5 && /[\u4e00-\u9fa5]/.test(t)) return t;
     }
   } catch(e){
-    return 'AI服务当前暂不可用，您可以试试：门票、美食、住宿、交通、历史、VR体验等话题。';
+    console.log('[AI API] Pollinations失败:', e.message);
   }
-  return 'AI服务当前繁忙，请稍后再试。您也可以试试：门票、美食、住宿、交通、历史、VR体验等话题。';
+  
+  return 'AI服务当前暂不可用，您可以试试点击快捷问题，或稍后再试。';
 }
 
-/* ------- 天气服务（Open-Meteo + JSONP 备份） ------- */
+/* ------- 天气服务（统一数据来源） ------- */
 function loadWeather(){
-  if (location.protocol === 'file:' || !navigator.onLine) {
+  if (!navigator.onLine) {
     $('#weather').innerHTML = '<span>📍</span><span class="temp">--°C</span><span>☀️ 离线</span>';
     return;
   }
-  fetch('https://api.open-meteo.com/v1/forecast?latitude=28.85&longitude=121.12&current_weather=true')
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      var c = d.current_weather || {};
-      var t = Math.round(c.temperature || 0);
-      var code = c.weathercode;
-      var desc = weatherDesc(code);
-      var icon = weatherIcon(code);
-      $('#weather').innerHTML = '<span>📍</span><span class="temp">' + t + '°C</span><span>' + icon + ' ' + desc + '</span>';
-    })
-    .catch(function(){ $('#weather').innerHTML = '<span>📍</span><span class="temp">--°C</span><span>☀️ --</span>'; });
+  if (currentWeather && currentWeather.current_weather) {
+    var c = currentWeather.current_weather;
+    var t = Math.round(c.temperature || 0);
+    var code = c.weathercode;
+    var desc = weatherDesc(code);
+    var icon = weatherIcon(code);
+    $('#weather').innerHTML = '<span>📍</span><span class="temp">' + t + '°C</span><span>' + icon + ' ' + desc + '</span>';
+    console.log('[天气API] 使用缓存数据:', t + '°C', desc);
+    return;
+  }
+  console.log('[天气API] 快速获取当前天气...');
+  
+  var resolved = false;
+  var showResult = function(t, desc, icon, code){
+    if (resolved) return;
+    resolved = true;
+    $('#weather').innerHTML = '<span>📍</span><span class="temp">' + t + '°C</span><span>' + icon + ' ' + desc + '</span>';
+    if (!currentWeather) currentWeather = {};
+    currentWeather.current_weather = { temperature: t, weathercode: code };
+    console.log('[天气API] 获取成功:', t + '°C', desc);
+  };
+  
+  var openMeteoUrl = 'https://api.open-meteo.com/v1/forecast?latitude=28.8647&longitude=121.1352&current_weather=true&timezone=Asia/Shanghai';
+  var tencentUrl = 'https://wis.qq.com/weather/common?source=pc&weather_type=observe&province=浙江&city=台州&county=临海市';
+  
+  fetch(tencentUrl, { signal: AbortSignal.timeout(2500) })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d && d.status === 200 && d.data && d.data.observe) {
+      var o = d.data.observe;
+      showResult(parseInt(o.degree) || 25, o.weather || '晴', weatherIcon(tencentWeatherCodeToWmo(o.weather)), tencentWeatherCodeToWmo(o.weather));
+    }
+  }).catch(function(){});
+  
+  fetch(openMeteoUrl, { signal: AbortSignal.timeout(3000) })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d && d.current_weather) {
+      var c = d.current_weather;
+      showResult(Math.round(c.temperature || 0), weatherDesc(c.weathercode), weatherIcon(c.weathercode), c.weathercode);
+    }
+  }).catch(function(){});
+}
+
+function loadWeatherJSONP(){
+  var callbackName = 'wttrCallback_' + Date.now();
+  var timeoutTimer = setTimeout(function() {
+    console.error('[天气API] wttr.in超时');
+    $('#weather').innerHTML = '<span>📍</span><span class="temp">--°C</span><span>☀️ --</span>';
+    delete window[callbackName];
+    var script = document.getElementById('wttr-script');
+    if (script) script.remove();
+  }, 12000);
+  
+  window[callbackName] = function(data){
+    clearTimeout(timeoutTimer);
+    try {
+      var c = data.current_condition && data.current_condition[0];
+      if (c) {
+        var t = Math.round(parseFloat(c.temp_C) || 0);
+        var desc = c.weatherDesc && c.weatherDesc[0] && c.weatherDesc[0].value || '未知';
+        var icon = weatherIconByName(desc);
+        $('#weather').innerHTML = '<span>📍</span><span class="temp">' + t + '°C</span><span>' + icon + ' ' + desc + '</span>';
+        console.log('[天气API] wttr.in成功:', t + '°C', desc);
+      } else {
+        throw new Error('No data');
+      }
+    } catch(e) {
+      console.error('[天气API] wttr.in解析失败:', e);
+      $('#weather').innerHTML = '<span>📍</span><span class="temp">--°C</span><span>☀️ --</span>';
+    }
+    delete window[callbackName];
+    var script = document.getElementById('wttr-script');
+    if (script) script.remove();
+  };
+  
+  var script = document.createElement('script');
+  script.id = 'wttr-script';
+  script.src = 'https://wttr.in/28.85,121.12?format=j1&callback=' + callbackName;
+  script.onerror = function() {
+    clearTimeout(timeoutTimer);
+    console.error('[天气API] wttr.in加载失败');
+    $('#weather').innerHTML = '<span>📍</span><span class="temp">--°C</span><span>☀️ --</span>';
+    delete window[callbackName];
+    script.remove();
+  };
+  document.head.appendChild(script);
 }
 function weatherDesc(code){
-  var m = {0:'晴',1:'大致晴',2:'多云',3:'阴',45:'雾',48:'雾',51:'小雨',53:'小雨',55:'小雨',61:'雨',63:'雨',65:'大雨',71:'雪',73:'雪',75:'大雪',80:'阵雨',81:'阵雨',82:'强阵雨'};
-  return m[code] || '—';
+  var m = {
+    0:'晴',1:'大致晴',2:'多云',3:'阴',
+    45:'雾',48:'雾凇',
+    51:'小雨',53:'小雨',55:'小雨',56:'毛毛雨',57:'毛毛雨',
+    61:'小雨',63:'中雨',65:'大雨',66:'毛毛雨',67:'毛毛雨',
+    71:'小雪',73:'中雪',75:'大雪',76:'霰',77:'霰',
+    80:'阵雨',81:'阵雨',82:'强阵雨',83:'阵雨',84:'阵雨',
+    95:'雷阵雨',96:'雷阵雨',99:'雷阵雨'
+  };
+  return m[code] || (code >= 51 && code <= 67 ? '雨' : code >= 71 && code <= 77 ? '雪' : code >= 80 && code <= 84 ? '阵雨' : code >= 95 ? '雷阵雨' : '—');
 }
 function weatherIcon(code){
   if (code === 0 || code === 1) return '☀️';
   if (code === 2) return '⛅';
-  if (code === 3 || code === 45 || code === 48) return '☁️';
-  if (code >= 51 && code <= 65) return '🌧️';
-  if (code >= 71 && code <= 75) return '❄️';
-  if (code >= 80) return '🌦️';
+  if (code === 3) return '☁️';
+  if (code === 45) return '🌫️';
+  if (code === 48) return '🧊';
+  if (code >= 51 && code <= 67) return '🌧️';
+  if (code >= 71 && code <= 77) return '❄️';
+  if (code >= 80 && code <= 84) return '🌦️';
+  if (code >= 95) return '⛈️';
+  return '🌤️';
+}
+function weatherIconByName(name){
+  name = (name || '').toLowerCase();
+  if (name.indexOf('晴') >= 0) return '☀️';
+  if (name.indexOf('多云') >= 0) return '⛅';
+  if (name.indexOf('阴') >= 0 || name.indexOf('overcast') >= 0) return '☁️';
+  if (name.indexOf('雨') >= 0) {
+    if (name.indexOf('雷') >= 0) return '⛈️';
+    if (name.indexOf('大') >= 0) return '🌧️';
+    return '🌦️';
+  }
+  if (name.indexOf('雪') >= 0) return '❄️';
+  if (name.indexOf('雾') >= 0 || name.indexOf('mist') >= 0) return '🌫️';
+  if (name.indexOf('霜') >= 0) return '🧊';
+  if (name.indexOf('风') >= 0) return '💨';
   return '🌤️';
 }
 
@@ -3559,8 +4651,131 @@ var ATTRACTIONS = [
   {id:'qiaoyunge',  name:'樵云阁',    x:1376, y:852,  type:'spot', desc:'矗立于东湖之北，是全湖的最高建筑。登临此阁，四周湖光山色尽收眼底。阁名源于纪念一位为民族气节而投湖的樵夫，为美景增添了一份悲壮的历史传说。', images:['./Assets/images/card/qiaoyunge_1.jpg','./Assets/images/card/qiaoyunge_2.jpg']},
   {id:'huxinting',  name:'湖心亭',    x:1389, y:913,  type:'spot', desc:'位于东湖外湖，亭阁飞檐八出，造型空灵大气。亭内悬有清代学者俞樾所题楹联，将此间“好水好山”与西湖美景相提并论，是东湖的标志性景观。', images:['./Assets/images/card/huxinting_1.jpg','./Assets/images/card/huxinting_2.jpg']},
 ];
+var SEASON_DATA = {
+  spring: {
+    icon: '🌸',
+    title: '春季赏花',
+    subtitle: '三月至五月 · 繁花似锦的古城',
+    desc: '春日的台州府城，樱花、桃花、油菜花竞相绽放，漫步在千年古城墙下，仿佛穿越时空回到了诗意盎然的江南。',
+    spots: [
+      { name: '紫阳街樱花', desc: '古街两旁樱花盛开，粉白相间，美不胜收。漫步青石板路，感受千年古韵与春日浪漫的完美交融。最佳观赏期3月下旬至4月初，兴善门至巾山广场樱花大道是必打卡C位。', location: '📍 紫阳街', time: '⏰ 3-4月', navUrl: 'https://uri.amap.com/search?keyword=台州府城紫阳街&city=台州', image: './Assets/images/card/wengcheng_1.jpg' },
+      { name: '东湖桃花', desc: '湖畔桃花映碧水，春风拂面醉人心。乘摇橹船穿行九曲桥下，湖心亭流光倒映碧波，是宋代园林的典范。', location: '📍 东湖公园', time: '⏰ 3-4月', navUrl: 'https://uri.amap.com/search?keyword=台州府城东湖公园&city=台州', image: './Assets/images/card/huxinting_1.jpg' },
+      { name: '北固山油菜花', desc: '城墙脚下金色花海，与古城相映成趣。登上白云楼远眺，金浪翻滚如诗如画。', location: '📍 北固山', time: '⏰ 3-5月', navUrl: 'https://uri.amap.com/search?keyword=台州府城北固山&city=台州', image: './Assets/images/card/baiyunlou_1.jpg' },
+      { name: '巾山春色', desc: '双峰插云，春意盎然，古塔与新绿相映成趣。山上古木参天，鸟语花香，是踏青寻幽的好去处。', location: '📍 巾山公园', time: '⏰ 3-5月', navUrl: 'https://uri.amap.com/search?keyword=台州府城巾山&city=台州', image: './Assets/images/card/qiaoyunge_1.jpg' },
+      { name: '龙兴寺樱花', desc: '千年古刹樱花盛开，禅意与春意交融。黄墙黛瓦搭配粉樱，被誉为"江南最美古寺樱花道"，是中日佛教交流的重要圣地。', location: '📍 龙兴寺', time: '⏰ 3-4月', navUrl: 'https://uri.amap.com/search?keyword=台州府城龙兴寺&city=台州', image: './Assets/images/card/wengcheng_2.jpg' }
+    ],
+    videos: [
+      { title: '台州府城樱花盛开航拍', channel: '视觉中国视频', duration: '00:20', videoUrl: 'https://www.vcg.com/creative-video/27973551', image: './Assets/images/card/wengcheng_1.jpg' },
+      { title: '紫阳街樱花大道唯美视频', channel: '视频号@台州文旅', duration: '01:30', videoUrl: 'https://www.vjshi.com/watch/42653987.html', image: './Assets/images/card/huxinting_1.jpg' }
+    ],
+    news: [
+      { date: '2026-04-01', title: '以"樱花"为媒，播"文明"种子', desc: '台州临海举办"台州府城樱花纪4.0"活动，特别推出"春天，在临海种下一颗文明种子"主题板块，以"樱花"为媒，以"文明"为引。', newsUrl: 'http://www.zj.xinhuanet.com/20260401/b222ab9c3fbf41b397bab7e45cb7a85e/c.html' },
+      { date: '2026-03-28', title: '台州临海：让花景变"钱景"', desc: '台州府城樱花纪4.0活动如约而至，首日客流超3万人次。樱花市集汇聚25个年轻业态，把花景转化为文旅消费新动能。', newsUrl: 'http://zj.people.com.cn/n2/2026/0328/c186327-41536682.html' },
+      { date: '2026-03-26', title: '2026台州府城樱花纪市集活动攻略', desc: 'CHŪNing 台州府城樱花纪4.0将于3月27-29日举办，包含文明种子打卡、樱花市集、樱乐会、花礼巡游等活动。', newsUrl: 'http://m.tz.bendibao.com/xiuxian/31439.shtm' },
+      { date: '2025-04-04', title: '春樱遇见星光 千年府城解锁"春日经济"', desc: '春日的台州府城，樱花如雪，"江南最美古寺樱花道"与春日市集交相辉映，明星助阵音乐会人气爆棚。', newsUrl: 'http://tz.zjol.com.cn/tzxw/202504/t20250403_30920415_ext.shtml' },
+      { date: '2026-03-25', title: '2026台州赏樱推荐', desc: '不少游客提到临海台州府城是一眼入魂的樱花主场，古城墙与樱云同框，日夜都很出片，被评为"夜樱更绝"。', newsUrl: 'https://hk.trip.com/moments/theme/destination-taizhou-402-cherry-blossom-viewing-990762/' }
+    ],
+    tips: [
+      { icon: '📷', text: '最佳拍摄时间：清晨6-8点，光线柔和' },
+      { icon: '👕', text: '建议穿着浅色衣物，与花海更配' },
+      { icon: '🚗', text: '赏花高峰期建议绿色出行，停车较紧张' },
+      { icon: '💧', text: '春季多雨，记得携带雨具' }
+    ]
+  },
+  summer: {
+    icon: '🌊',
+    title: '夏日清凉',
+    subtitle: '六月至八月 · 戏水避暑好去处',
+    desc: '夏日的台州府城，东湖泛舟、灵江纳凉，在千年古街品尝清凉小吃，感受江南水乡的独特韵味。',
+    spots: [
+      { name: '东湖泛舟', desc: '泛舟湖上，清风拂面，尽享夏日清凉。乘摇橹船穿行九曲桥下，湖心亭流光倒映碧波，是宋代园林的典范。', location: '📍 东湖公园', time: '⏰ 6-8月', navUrl: 'https://uri.amap.com/search?keyword=台州府城东湖公园&city=台州', image: './Assets/images/card/huxinting_1.jpg' },
+      { name: '灵江夜游', desc: '夜幕降临，江风习习，赏古城夜景。中津浮桥灯火璀璨，城墙光影秀震撼上演，《侠影流火》《剑气长城》光影大秀每晚精彩呈现。', location: '📍 灵江沿岸', time: '⏰ 19:00-22:00', navUrl: 'https://uri.amap.com/search?keyword=台州府城灵江&city=台州', image: './Assets/images/card/lanshengmen_1.jpg' },
+      { name: '紫阳街清凉小吃', desc: '青草糊、石莲豆腐，解暑佳品。蛋清羊尾、海苔饼、麦虾等特色小吃，让您舌尖上品味台州。', location: '📍 紫阳街', time: '全天', navUrl: 'https://uri.amap.com/search?keyword=台州府城紫阳街&city=台州', image: './Assets/images/card/ximenjie_1.jpg' },
+      { name: '江南长城夜游', desc: '18点后免费夜游，夕阳把城墙染成金红色，万家灯火古城铺在脚下，旅行团全部离场。夜游路线：兴善门→十伞巷→紫阳街→赤城路。', location: '📍 揽胜门', time: '⏰ 18:00-21:00', navUrl: 'https://uri.amap.com/search?keyword=台州府城墙揽胜门&city=台州', image: './Assets/images/card/lanshengmen_2.jpg' },
+      { name: '西门街美食', desc: '西门街小吃地道风味，姜汁调蛋、青草糊、豆腐圆，体验最正宗的台州味道。', location: '📍 西门街', time: '全天', navUrl: 'https://uri.amap.com/search?keyword=台州府城西门街&city=台州', image: './Assets/images/card/ximenjie_2.jpg' }
+    ],
+    videos: [
+      { title: '台州府城紫阳街夜景航拍', channel: '视频素材网站', duration: '06:25', videoUrl: 'https://www.vjshi.com/watch/26669157.html', image: './Assets/images/card/ximenjie_1.jpg' },
+      { title: '航拍浙江临海台州府城文化旅游区夜景', channel: '视频素材网站', duration: '02:46', videoUrl: 'https://www.vjshi.com/watch/35963168.html', image: './Assets/images/card/lanshengmen_2.jpg' }
+    ],
+    news: [
+      { date: '2025-07-03', title: '台州府城城墙光影秀播出时间调整', desc: '为呈现更臻完美的光影视觉盛宴，台州府城城墙光影秀播出时间调整为每周二至周日晚19:30、21:30各一场。', newsUrl: 'https://m.sohu.com/a/910333457_121117478/' },
+      { date: '2026-06-30', title: '暑期台州必体验：山海秘境、东海美食', desc: '暑期台州以"山、海、城"交融的避暑体验著称，城墙夜游开放至21:30，是长三角优质避暑胜地。', newsUrl: 'http://m.163.com/dy/article/L0M7PJ9B0556MG5U.html' },
+      { date: '2025-06-11', title: '台州府城城墙光影秀再获国际大奖', desc: '临海的台州府城城墙光影秀荣获"2025亚洲照明设计奖优异之光"奖项，这是继MUSE铂金奖后的第二个国际大奖。', newsUrl: 'https://paper.taizhou.com.cn/taizhou/tzrb/pc/content/202506/11/content_230084.html' },
+      { date: '2025-05-23', title: '台州府城文化旅游区主客联动点灯送福', desc: '台州府城以"文旅+非遗"为笔，以千年古城为卷，匠心绘就"点灯送福"文化盛事，将宋韵风华与市井烟火相融。', newsUrl: 'https://lhnews.zjol.com.cn/lhnews/system/2025/05/23/034965459.shtml' },
+      { date: '2025-06-20', title: '台州府城夜游秘籍：18点后免费进', desc: '解锁《剑来》光影大片拍摄位，夜游路线：兴善门→十伞巷→紫阳街→赤城路，《侠影流火》《剑气长城》灯光秀每晚精彩上演。', newsUrl: 'http://m.toutiao.com/group/7555881958832636457/' }
+    ],
+    tips: [
+      { icon: '☀️', text: '夏季炎热，建议早晚游览，避免正午暴晒' },
+      { icon: '🧴', text: '注意防晒，涂抹防晒霜，佩戴遮阳帽' },
+      { icon: '🥤', text: '随身携带饮用水，及时补充水分' },
+      { icon: '🕶️', text: '夜游记得带上防蚊用品' }
+    ]
+  },
+  autumn: {
+    icon: '🍁',
+    title: '金秋赏景',
+    subtitle: '九月至十一月 · 满城尽带黄金甲',
+    desc: '秋日的台州府城，银杏金黄、桂花香飘，登高望远，俯瞰古城秋景，感受丰收的喜悦。',
+    spots: [
+      { name: '白云楼银杏', desc: '千年银杏金黄一片，美不胜收。登上白云楼远眺，金黄的银杏叶与古城墙交相辉映，是摄影爱好者的天堂。', location: '📍 白云楼', time: '⏰ 11月', navUrl: 'https://uri.amap.com/search?keyword=台州府城白云楼&city=台州', image: './Assets/images/card/baiyunlou_1.jpg' },
+      { name: '府城墙登高', desc: '登高望远，俯瞰古城秋景。登198级好汉坡至顾景楼，可将东湖美景与古城风貌一览无余。江南长城S弯是摄影顶流机位。', location: '📍 揽胜门', time: '⏰ 9-11月', navUrl: 'https://uri.amap.com/search?keyword=台州府城墙揽胜门&city=台州', image: './Assets/images/card/lanshengmen_1.jpg' },
+      { name: '桂花飘香', desc: '满城桂花香，沁人心脾。金秋九月，古城内外桂花盛开，香气弥漫每一条古巷。', location: '📍 全城', time: '⏰ 9-10月', navUrl: 'https://uri.amap.com/search?keyword=台州府城&city=台州', image: './Assets/images/card/wengcheng_1.jpg' },
+      { name: '巾山秋色', desc: '双峰插云，秋色宜人。山上古木参天，红叶点缀，登高远眺，灵江如练，古城如画。', location: '📍 巾山公园', time: '⏰ 10-11月', navUrl: 'https://uri.amap.com/search?keyword=台州府城巾山&city=台州', image: './Assets/images/card/qiaoyunge_2.jpg' },
+      { name: '东湖秋韵', desc: '秋日东湖，层林尽染。九曲回廊、湖心亭台与碧水相映，展现江南园林的婉约之美。摇橹船泛波，一步一景皆是宋式园林美学。', location: '📍 东湖公园', time: '⏰ 10-11月', navUrl: 'https://uri.amap.com/search?keyword=台州府城东湖公园&city=台州', image: './Assets/images/card/huxinting_2.jpg' }
+    ],
+    videos: [
+      { title: '浙江临海台州府城文化旅游区合集', channel: '视频素材网站', duration: '05:55', videoUrl: 'https://www.vjshi.com/watch/8594551.html', image: './Assets/images/card/baiyunlou_1.jpg' },
+      { title: '航拍台州府城江南长城', channel: '视觉中国视频', duration: '00:40', videoUrl: 'https://www.vcg.com/creative-video/36580454', image: './Assets/images/card/lanshengmen_1.jpg' }
+    ],
+    news: [
+      { date: '2025-12-11', title: '刷屏预警！临海银杏进入"全黄模式"', desc: '12月的临海，银杏花开正浪漫！灵湖阳光穿过高大银杏树，金黄叶片随风飘动，文庙、龙兴寺、小芝镇杏树里民宿都是绝佳打卡点。', newsUrl: 'https://m.sohu.com/a/964072354_121117478/' },
+      { date: '2025-09-25', title: '国庆寻秋！浙江台州临海藏着古城秘境', desc: '9-10月的临海，江南长城脚下橘子树挂满青黄果实，紫阳古街海苔饼刚出炉飘香，灵湖秋风裹着桂花香，是国庆出行宝藏选择。', newsUrl: 'https://view.inews.qq.com/k/20250925A05D4A00?no-redirect=1' },
+      { date: '2025-12-28', title: '2026临海赏秋景点推荐', desc: '临海赏秋以兰田山、南黄古道与台州府城墙最具代表，山野黄叶、古道枫火、城墙叠景一次满足，11月体验最佳。', newsUrl: 'https://hk.trip.com/moments/theme/destination-linhai-544-fall-scenery-993130/' },
+      { date: '2025-12-17', title: '小城秘境野行手记｜临海', desc: '揽宋韵风华、拥长城灵秀的江南秘境临海，千年台州府城墙依山踞江、紫阳古街承载文脉、东湖园林藏尽江南雅致。', newsUrl: 'http://m.toutiao.com/group/7657463648747389475/' },
+      { date: '2025-11-21', title: '台州府城入选全国百强榜', desc: '台州府城再次入选"2025年度5A级景区品牌传播力100强榜单"，并作为10家优秀景区代表上台领奖。', newsUrl: 'https://m.sohu.com/a/957075700_121106994' }
+    ],
+    tips: [
+      { icon: '📸', text: '银杏最佳拍摄期：11月中旬至12月初' },
+      { icon: '👖', text: '早晚温差大，建议穿着多层衣物' },
+      { icon: '🍵', text: '秋日宜品茶，推荐紫阳街茶馆' },
+      { icon: '🍂', text: '落叶较多，注意脚下安全' }
+    ]
+  },
+  winter: {
+    icon: '❄️',
+    title: '冬日暖阳',
+    subtitle: '十二月至二月 · 古城冬韵',
+    desc: '冬日的台州府城，暖阳高照，梅花傲雪，在古街品尝姜汤面，感受江南冬日的温暖与诗意。',
+    spots: [
+      { name: '东湖梅花', desc: '寒冬腊月，梅花傲雪绽放。长城梅园遍植200余株梅树，有骨里红、宫粉、绿萼等数十品种，两百年以上老梅树近20株，是浙东著名赏梅胜地。', location: '📍 东湖公园', time: '⏰ 1-2月', navUrl: 'https://uri.amap.com/search?keyword=台州府城东湖公园&city=台州', image: './Assets/images/card/huxinting_2.jpg' },
+      { name: '古城暖阳', desc: '冬日午后，暖阳洒在青石板上。漫步紫阳古街，感受冬日暖阳与千年古韵的交融。', location: '📍 紫阳街', time: '⏰ 12-2月', navUrl: 'https://uri.amap.com/search?keyword=台州府城紫阳街&city=台州', image: './Assets/images/card/wengcheng_1.jpg' },
+      { name: '姜汤面暖身', desc: '一碗姜汤面，暖身又暖心。西门街地道姜汤面，暖胃驱寒，是台州人冬日的最爱。', location: '📍 西门街', time: '全天', navUrl: 'https://uri.amap.com/search?keyword=台州府城西门街&city=台州', image: './Assets/images/card/ximenjie_2.jpg' },
+      { name: '江南长城冬景', desc: '冬日城墙，银装素裹。雪后的江南长城宛如一条银色巨龙，蜿蜒盘旋于北固山上。', location: '📍 揽胜门', time: '⏰ 12-2月', navUrl: 'https://uri.amap.com/search?keyword=台州府城墙揽胜门&city=台州', image: './Assets/images/card/lanshengmen_2.jpg' },
+      { name: '巾山双塔', desc: '双塔屹立，冬日照耀。千年双塔在冬日暖阳下更显巍峨，是古城的重要地标。', location: '📍 巾山公园', time: '⏰ 12-2月', navUrl: 'https://uri.amap.com/search?keyword=台州府城巾山&city=台州', image: './Assets/images/card/qiaoyunge_1.jpg' }
+    ],
+    videos: [
+      { title: '临海江南小长城梅园梅花风光航拍', channel: '视觉中国视频', duration: '01:56', videoUrl: 'https://www.vcg.com/creative-video/28509319', image: './Assets/images/card/huxinting_2.jpg' },
+      { title: '台州府城雪景梅园梅花航拍', channel: '视频素材网站', duration: '03:59', videoUrl: 'https://www.vjshi.com/watch/26871749.html', image: './Assets/images/card/lanshengmen_2.jpg' }
+    ],
+    news: [
+      { date: '2026-01-30', title: '走，赏梅去', desc: '临海台州府城的梅园遍植梅树，有骨里红、宫粉、朱砂、绿萼等数十个品种，其中200年以上老梅树将近20株，行走园中花瓣不时飘落。', newsUrl: 'https://paper.taizhou.com.cn/taizhou/tzrb/wap/content/202601/30/content_246265.html' },
+      { date: '2026-02-04', title: '台州一大波梅花开了，赶紧约起来', desc: '临海·台州府城梅园依山种植了200余株不同品种的梅树，涵盖骨里红、宫粉、朱砂、绿萼等数十个品种，更有近20株树龄超200年的老梅树。', newsUrl: 'https://www.zjtz.gov.cn/col/col1229429851/art/2026/art_d4a1b82ad774b0c7b1eaf715b1358091.html' },
+      { date: '2026-02-04', title: '今日立春，台州"梅"好上线', desc: '立春之日，台州梅花已悄然绽放。临海长城脚下、东湖水畔、巾山旁，梅香各自酝酿着不同的诗意，东湖还有心形梅花网红打卡点。', newsUrl: 'https://www.zjtz.gov.cn/col/col1229429851/art/2026/art_aaf4720a6bdc6d69b7a1d591af9200d2.html' },
+      { date: '2026-01-30', title: '大多数免费！台州13个绝美赏梅地', desc: '长城梅园位于台州古城墙北固山西侧，曾是台州官署后花园，占地约六七亩，有骨里红、宫粉、朱砂、绿萼等数十个品种的梅树200多株。', newsUrl: 'http://news.qq.com/rain/a/20260130A075OJ00' },
+      { date: '2026-02-06', title: '枕长城，嗅梅香，迎春里把台州府城的冬日美好住成日常', desc: '台州府城冬日美好体验，枕长城入眠，嗅梅香苏醒，感受千年古城的冬日温暖与诗意。', newsUrl: 'https://m.meadin.com/292840.html' }
+    ],
+    tips: [
+      { icon: '🥶', text: '冬季气温较低，注意保暖防寒' },
+      { icon: '☕', text: '推荐品尝姜汤面、姜汁调蛋，驱寒暖身' },
+      { icon: '🌤️', text: '晴天午后游览最佳，暖阳舒适' },
+      { icon: '❄️', text: '遇雨雪天气，注意地面湿滑' }
+    ]
+  }
+};
+
 var AREAS = [
-  {id:'citywall', name:'台州府城', x:946, y:360, desc:'<span class="hl">基本概况</span>始建于东晋，距今已有1600余年历史，现存全长4700余米。古建筑学家罗哲文誉其为北京八达岭等长城的"师范"和"蓝本"。<span class="hl">核心看点</span>城墙沿北固山山脊蜿蜒至灵江东岸，揽胜门是主要入口，有198级台阶直达。城墙上的铭文砖是一大特色，已发现179种，包含"永保万安"等吉语和产地信息，如同"石质档案"。<span class="hl">独特构造</span>弧形马面（半圆半方，国内孤例，为减少江水冲击力），以及双层空心敌台（戚继光为抗倭所创）。<span class="hl">多重功能</span>城墙兼具军事防御和城市防洪功能，历史上因此项防洪功能在元代"毁城令"中幸存。2019年台风"利奇马"期间，城墙有效减弱了洪水对古城的冲击。<span class="hl">历史佳话</span>相传唐代修筑"百步峻"时，曾因雪中灵鹿足迹找到最佳路线，临海因此得名"鹿城"。', vr:'https://ad9ovdw3v.wasee.com/wt/ad9ovdw3v?def_sid=1767393', images:['./Assets/images/card/lanshengmen_1.jpg','./Assets/images/card/baiyunlou_1.jpg']},
+  {id:'citywall', name:'台州府城墙', x:946, y:360, desc:'<span class="hl">基本概况</span>始建于东晋，距今已有1600余年历史，现存全长4700余米。古建筑学家罗哲文誉其为北京八达岭等长城的"师范"和"蓝本"。<span class="hl">核心看点</span>城墙沿北固山山脊蜿蜒至灵江东岸，揽胜门是主要入口，有198级台阶直达。城墙上的铭文砖是一大特色，已发现179种，包含"永保万安"等吉语和产地信息，如同"石质档案"。<span class="hl">独特构造</span>弧形马面（半圆半方，国内孤例，为减少江水冲击力），以及双层空心敌台（戚继光为抗倭所创）。<span class="hl">多重功能</span>城墙兼具军事防御和城市防洪功能，历史上因此项防洪功能在元代"毁城令"中幸存。2019年台风"利奇马"期间，城墙有效减弱了洪水对古城的冲击。<span class="hl">历史佳话</span>相传唐代修筑"百步峻"时，曾因雪中灵鹿足迹找到最佳路线，临海因此得名"鹿城"。', vr:'https://ad9ovdw3v.wasee.com/wt/ad9ovdw3v?def_sid=1767393', images:['./Assets/images/card/lanshengmen_1.jpg','./Assets/images/card/baiyunlou_1.jpg']},
   {id:'donghu',   name:'东湖', x:1450, y:745, desc:'<span class="hl">基本概况</span>因位于台州府城墙东侧而得名，南北长约500米，东西宽约150米。清代文人俞樾曾赞誉："杭州有西湖，台州有东湖。东湖之胜，小西湖也。"<span class="hl">历史渊源</span>前身是北宋初年的水军营，后由郡守钱暄于熙宁四年（1072年）开凿成湖，以导流分洪。<span class="hl">核心景观</span>分为前湖和后湖，有"台州园林之首"的美誉。主要景点包括湖心亭（东湖标志性建筑，建于清康熙年间）、半勾亭（取自白居易诗意）、九曲桥，以及骆宾王祠（骆宾王曾任临海县丞）。<span class="hl">打卡亮点</span>在九曲桥正中间可拍摄亭台倒影，从北固山揽胜门可俯拍东湖全景。', vr:'https://5a5zazkru.wasee.com/wt/5a5zazkru?def_sid=2223677', images:['./Assets/images/card/huxinting_1.jpg','./Assets/images/card/qiaoyunge_1.jpg']},
   {id:'ziyangjie', name:'紫阳街', x:635, y:1389, desc:'<span class="hl">基本概况</span>全长约1080米，是台州府城的主干道，至今仍保持着北宋时期的里坊制格局。<span class="hl">荣誉称号</span>中国历史文化名街，入选第一批浙江省非遗主题街区，2025年入选新一批国家级旅游休闲街区。<span class="hl">核心看点</span>古街上有悟真坊、顺政坊等坊墙，以及千佛井（与千佛塔遥遥相望）、中国人民银行台州支行旧址等历史遗迹。街区展示有剪纸、草编、黄沙狮子等20余项非遗。<span class="hl">特色美食</span>蛋清羊尾、海苔饼、梅花糕、麦虾、糟羹等。<span class="hl">历史人文</span>古街因道教南宗鼻祖张伯端（紫阳真人）得名，也记载着戚继光、朱自清等名人往事。近3万原住民在此生活，充满烟火气。', vr:'https://6695ayfhl.wasee.com/wt/6695ayfhl?def_sid=2865446', images:['./Assets/images/card/wengcheng_1.jpg','./Assets/images/card/ximenjie_1.jpg']},
 ];
@@ -3573,14 +4788,13 @@ function getSeason(){
   return 'Winter';
 }
 
-function initMap(){
+function initMap(reset){
   state.mapInit = true;
   var wrap = $('#mapWrap');
   var img = $('#mapImg');
   var layer = $('#mapLayer');
   if (!wrap || !img) return;
-  // Update map image based on season
-  var season = getSeason();
+  var season = state.season ? state.season.charAt(0).toUpperCase() + state.season.slice(1) : getSeason();
   var newSrc = './Assets/images/map/' + season + '_map.png';
   if (img.getAttribute('data-current-season') !== season) {
     img.src = newSrc;
@@ -3589,20 +4803,22 @@ function initMap(){
   var doInit = function(){
     var W = wrap.clientWidth, H = wrap.clientHeight;
     if (W === 0 || H === 0) {
-      setTimeout(doInit, 50);
+      requestAnimationFrame(function(){ setTimeout(doInit, 50); });
       return;
     }
     var iw = 1728, ih = 2304;
-    // Fill the entire viewport (cover behavior) - prevents black edges
     var s = Math.max(W / iw, H / ih);
     state.map.minScale = s;
-    state.map.maxScale = 2.5;
-    state.map.scale = s;
-    state.map.tx = (W - iw * s) / 2;
-    state.map.ty = (H - ih * s) / 2;
+    state.map.maxScale = 3;
+    if (reset || !state.map.initialized || state.map.scale < s) {
+      state.map.scale = s;
+    }
+    // Recalculate position based on current scale
+    state.map.tx = (W - iw * state.map.scale) / 2;
+    state.map.ty = (H - ih * state.map.scale) / 2;
     state.map.initialized = true;
-    applyMap();
     clampMap();
+    applyMap();
     renderMapButtons();
     startAutoDrift();
   };
@@ -3626,15 +4842,18 @@ function startAutoDrift(){
     if (driftPaused) return;
     if (state.currentPage !== 'scenic') return;
     var wrap = $('#mapWrap');
+    if (!wrap) return;
     var W = wrap.clientWidth, H = wrap.clientHeight;
     var iw = 1728, ih = 2304;
     var s = state.map.scale;
-    // Auto drift
+    var scaledW = iw * s, scaledH = ih * s;
+    // Only drift if map is larger than viewport in BOTH dimensions
+    if (scaledW <= W || scaledH <= H) return;
     state.map.tx += driftVx;
     state.map.ty += driftVy;
-    // Bounce at edges
-    var minTx = W - iw * s;
-    var minTy = H - ih * s;
+    // Bounce at edges - consistent with clampMap
+    var minTx = W - scaledW;
+    var minTy = H - scaledH;
     var maxTx = 0;
     var maxTy = 0;
     if (state.map.tx > maxTx) { state.map.tx = maxTx; driftVx = -Math.abs(driftVx); }
@@ -4119,7 +5338,7 @@ function switchImg(idx){
 function focusMap(x, y, scale, smooth){
   var wrap = $('#mapWrap');
   var W = wrap.clientWidth, H = wrap.clientHeight;
-  var s = Math.min(scale, state.map.maxScale);
+  var s = Math.max(state.map.minScale, Math.min(scale, state.map.maxScale));
   var tx = W / 2 - x * s;
   var ty = H / 2 - y * s;
   // Clamp the target
@@ -4163,9 +5382,10 @@ function focusMap(x, y, scale, smooth){
     ox = state.map.tx; oy = state.map.ty;
     wrap.classList.add('grabbing');
     wrap.classList.remove('animating');
-    wrap.setPointerCapture(e.pointerId);
+    try { wrap.setPointerCapture(e.pointerId); } catch(err){}
     pauseDrift();
     if (resumeTimer) { clearTimeout(resumeTimer); resumeTimer = null; }
+    e.preventDefault();
   });
   wrap.addEventListener('pointermove', function(e){
     if (!dragging) return;
@@ -4174,22 +5394,27 @@ function focusMap(x, y, scale, smooth){
     clampMap();
     applyMap();
   });
-  var endDrag = function(){
+  var endDrag = function(e){
+    if (!dragging) return;
     dragging = false;
     wrap.classList.remove('grabbing');
+    if (e && e.pointerId !== undefined) {
+      try { wrap.releasePointerCapture(e.pointerId); } catch(err){}
+    }
     if (resumeTimer) clearTimeout(resumeTimer);
     resumeTimer = setTimeout(resumeDrift, 3000);
   };
   wrap.addEventListener('pointerup', endDrag);
-  wrap.addEventListener('pointer.cancel', endDrag);
-  wrap.addEventListener('pointerleave', endDrag);
+  wrap.addEventListener('pointercancel', endDrag);
+  // Listen on window to catch pointerup outside wrap
+  window.addEventListener('pointerup', endDrag);
 
   wrap.addEventListener('wheel', function(e){
     e.preventDefault();
     var rect = wrap.getBoundingClientRect();
     var cx = e.clientX - rect.left;
     var cy = e.clientY - rect.top;
-    delta = -e.deltaY * 0.0015;
+    var delta = -e.deltaY * 0.0015;
     zoomAt(cx, cy, delta);
     pauseDrift();
     if (resumeTimer) clearTimeout(resumeTimer);
@@ -4206,22 +5431,28 @@ function focusMap(x, y, scale, smooth){
   });
   $('#mapZoomOut').addEventListener('click', function(){
     var s = state.map.scale / 1.3;
-    if (s >= state.map.minScale) {
-      state.map.scale = s;
-      clampMap();
-      applyMap();
-    }
+    if (s < state.map.minScale) s = state.map.minScale;
+    state.map.scale = s;
+    var wrap = $('#mapWrap');
+    var W = wrap.clientWidth, H = wrap.clientHeight;
+    var iw = 1728, ih = 2304;
+    state.map.tx = (W - iw * s) / 2;
+    state.map.ty = (H - ih * s) / 2;
+    clampMap();
+    applyMap();
     pauseDrift();
     if (resumeTimer) clearTimeout(resumeTimer);
     resumeTimer = setTimeout(resumeDrift, 3000);
   });
-  $('#mapReset').addEventListener('click', initMap);
+  $('#mapReset').addEventListener('click', function(){ initMap(true); });
 })();
 
 function zoomAt(cx, cy, delta){
   var s = state.map.scale;
   var ns = s * (1 + delta);
-  if (ns < state.map.minScale || ns > state.map.maxScale) return;
+  if (ns < state.map.minScale) ns = state.map.minScale;
+  if (ns > state.map.maxScale) ns = state.map.maxScale;
+  if (ns === s) return;
   var ratio = ns / s;
   state.map.tx = cx - (cx - state.map.tx) * ratio;
   state.map.ty = cy - (cy - state.map.ty) * ratio;
@@ -4235,20 +5466,21 @@ function clampMap(){
   var wrap = $('#mapWrap');
   if (!wrap) return;
   var W = wrap.clientWidth, H = wrap.clientHeight;
+  if (W === 0 || H === 0) return;
   var iw = 1728, ih = 2304;
-  // If the scaled image is smaller than the viewport, keep centered
-  if (iw * m.scale <= W) {
-    m.tx = (W - iw * m.scale) / 2;
+  var scaledW = iw * m.scale;
+  var scaledH = ih * m.scale;
+  // Horizontal: if map wider than viewport, limit to [W-scaledW, 0]; else center
+  if (scaledW >= W) {
+    m.tx = Math.max(W - scaledW, Math.min(m.tx, 0));
   } else {
-    // Otherwise, clamp so no black edges visible
-    if (m.tx > 0) m.tx = 0;
-    if (m.tx < W - iw * m.scale) m.tx = W - iw * m.scale;
+    m.tx = (W - scaledW) / 2;
   }
-  if (ih * m.scale <= H) {
-    m.ty = (H - ih * m.scale) / 2;
+  // Vertical: if map taller than viewport, limit to [H-scaledH, 0]; else center
+  if (scaledH >= H) {
+    m.ty = Math.max(H - scaledH, Math.min(m.ty, 0));
   } else {
-    if (m.ty > 0) m.ty = 0;
-    if (m.ty < H - ih * m.scale) m.ty = H - ih * m.scale;
+    m.ty = (H - scaledH) / 2;
   }
 }
 
@@ -4311,8 +5543,15 @@ $('#subtitleToggle').addEventListener('click', function(){
 
 /* VR modal */
 var vrArea = null;
+var vrScale = 1;
+var vrMinScale = 0.5;
+var vrMaxScale = 3;
+var vrScaleStep = 0.2;
+
 function openVR(area){
   vrArea = area;
+  vrScale = 1;
+  updateVRScale();
   stopAllSpeech();
   $('#inlineCard').classList.remove('show');
   $('#speechToggle').classList.remove('on');
@@ -4385,6 +5624,39 @@ function openVR(area){
   $('#vrMask').classList.add('show');
   setTimeout(function(){ speak(state.currentText); }, 300);
 }
+
+function updateVRScale(){
+  var wrap = $('#vrFrameWrap');
+  var level = $('#vrZoomLevel');
+  if (wrap) wrap.style.transform = 'scale(' + vrScale + ')';
+  if (level) level.textContent = Math.round(vrScale * 100) + '%';
+}
+
+function vrZoomIn(){
+  vrScale = Math.min(vrScale + vrScaleStep, vrMaxScale);
+  updateVRScale();
+}
+
+function vrZoomOut(){
+  vrScale = Math.max(vrScale - vrScaleStep, vrMinScale);
+  updateVRScale();
+}
+
+function vrZoomReset(){
+  vrScale = 1;
+  updateVRScale();
+}
+
+$('#vrZoomIn').addEventListener('click', vrZoomIn);
+$('#vrZoomOut').addEventListener('click', vrZoomOut);
+$('#vrZoomReset').addEventListener('click', vrZoomReset);
+
+$('#vrFrameContainer').addEventListener('wheel', function(e){
+  e.preventDefault();
+  if (e.deltaY < 0) vrZoomIn();
+  else vrZoomOut();
+}, { passive: false });
+
 $('#vrOpenExternal').addEventListener('click', function(){
   if (!vrArea) return;
   var w = window.open(vrArea.vr, '_blank', 'noopener');
@@ -4447,13 +5719,6 @@ $('#vrSubtitleToggle').addEventListener('click', function(){
     btn.style.textDecoration = 'none';
     showToast('字幕已显示');
   }
-});
-
-window.addEventListener('resize', function(){
-  if (state.mapInit && state.currentPage === 'scenic') {
-    initMap();
-  }
-  if (state.currentPage === 'qa') positionQACarousel();
 });
 
 /* ============================================================
@@ -4554,17 +5819,37 @@ function updateRouteMap(){
 
 function updateBudget(){
   var tickets = {A: 70, B: 60};
+  var prices = {
+    ticket: tickets[currentRoute] || 70,
+    food: 80,
+    trans: 20,
+    gift: 60
+  };
   var total = 0;
-  var ticketEl = $('.budget-switch input[data-budget="ticket"]', $('#tab-official'));
-  var foodEl = $('.budget-switch input[data-budget="food"]', $('#tab-official'));
-  var transEl = $('.budget-switch input[data-budget="trans"]', $('#tab-official'));
-  var giftEl = $('.budget-switch input[data-budget="gift"]', $('#tab-official'));
-  if (ticketEl && ticketEl.checked) total += tickets[currentRoute] || 0;
-  if (foodEl && foodEl.checked) total += 80;
-  if (transEl && transEl.checked) total += 20;
-  if (giftEl && giftEl.checked) total += 60;
+  var maxTotal = prices.ticket + prices.food + prices.trans + prices.gift;
+  var items = ['ticket', 'food', 'trans', 'gift'];
+  
+  items.forEach(function(key){
+    var el = $('.budget-switch input[data-budget="' + key + '"]', $('#tab-official'));
+    var priceEl = $('#budget' + key.charAt(0).toUpperCase() + key.slice(1));
+    if (priceEl) priceEl.textContent = '¥' + prices[key];
+    if (el && el.checked) total += prices[key];
+    
+    var row = $('[data-budget-item="' + key + '"]', $('#tab-official'));
+    if (row) {
+      if (el && el.checked) row.classList.add('active');
+      else row.classList.remove('active');
+    }
+  });
+  
   var totalEl = $('#budgetTotal');
   if (totalEl) totalEl.textContent = '¥' + total;
+  
+  var progressEl = $('#budgetProgress');
+  if (progressEl) {
+    var percent = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
+    progressEl.style.width = percent + '%';
+  }
 }
 
 function applyRouteMap(){
@@ -4582,9 +5867,96 @@ $$('#itinerary .trip-seg-tabs .seg-tab').forEach(function(b){
     var tab = b.dataset.tab;
     $('#tab-official').style.display = tab === 'official' ? '' : 'none';
     $('#tab-smart').style.display = tab === 'smart' ? '' : 'none';
+    $('#tab-seasonal').style.display = tab === 'seasonal' ? '' : 'none';
     if (tab === 'official') updateRouteMap();
+    if (tab === 'seasonal') renderSeasonalContent();
   });
 });
+
+function renderSeasonalContent(){
+  var data = SEASON_DATA[state.season] || SEASON_DATA.summer;
+  
+  $('#seasonTabIcon').textContent = data.icon;
+  $('#seasonalIcon').textContent = data.icon;
+  $('#seasonalTitle').textContent = data.title;
+  $('#seasonalSubtitle').textContent = data.subtitle;
+  $('#seasonalDesc').textContent = data.desc;
+
+  var spotsContainer = $('#seasonalSpots');
+  spotsContainer.innerHTML = '';
+  data.spots.forEach(function(spot){
+    var card = document.createElement('div');
+    card.className = 'seasonal-spot-card';
+    card.innerHTML = '<div class="spot-img-wrap">' +
+      '<img src="' + (spot.image || './Assets/images/map/' + (state.season.charAt(0).toUpperCase() + state.season.slice(1)) + '_map.png') + '" alt="' + spot.name + '">' +
+      '<div class="spot-tag">推荐</div>' +
+      '</div>' +
+      '<div class="spot-info">' +
+      '<h4 class="spot-name">' + spot.name + '</h4>' +
+      '<p class="spot-desc">' + spot.desc + '</p>' +
+      '<div class="spot-meta">' +
+      '<span class="meta-item">' + spot.location + '</span>' +
+      '<span class="meta-item">' + spot.time + '</span>' +
+      '</div>' +
+      '</div>' +
+      '<div class="spot-nav-icon" title="导航前往">📍</div>';
+    card.addEventListener('click', function(){
+      if (spot.navUrl) {
+        window.open(spot.navUrl, '_blank');
+      }
+    });
+    spotsContainer.appendChild(card);
+  });
+
+  var videosContainer = $('#seasonalVideos');
+  videosContainer.innerHTML = '';
+  data.videos.forEach(function(video){
+    var card = document.createElement('div');
+    card.className = 'video-card';
+    card.innerHTML = '<div class="video-thumb">' +
+      '<img src="' + (video.image || './Assets/images/map/' + (state.season.charAt(0).toUpperCase() + state.season.slice(1)) + '_map.png') + '" alt="' + video.title + '">' +
+      '<div class="video-play-btn">▶</div>' +
+      '<span class="video-duration">' + video.duration + '</span>' +
+      '</div>' +
+      '<div class="video-info">' +
+      '<h4 class="video-title">' + video.title + '</h4>' +
+      '<p class="video-channel">' + video.channel + '</p>' +
+      '</div>';
+    card.addEventListener('click', function(){
+      if (video.videoUrl) {
+        window.open(video.videoUrl, '_blank');
+      }
+    });
+    videosContainer.appendChild(card);
+  });
+
+  var newsContainer = $('#seasonalNews');
+  newsContainer.innerHTML = '';
+  data.news.forEach(function(news){
+    var item = document.createElement('div');
+    item.className = 'news-item';
+    item.innerHTML = '<div class="news-date">' + news.date + '</div>' +
+      '<div class="news-content">' +
+      '<h4 class="news-title">' + news.title + '</h4>' +
+      '<p class="news-desc">' + news.desc + '</p>' +
+      '</div>';
+    item.addEventListener('click', function(){
+      if (news.newsUrl) {
+        window.open(news.newsUrl, '_blank');
+      }
+    });
+    newsContainer.appendChild(item);
+  });
+
+  var tipsHtml = '';
+  data.tips.forEach(function(tip){
+    tipsHtml += '<div class="tip-item">' +
+      '<span class="tip-icon">' + tip.icon + '</span>' +
+      '<span class="tip-text">' + tip.text + '</span>' +
+      '</div>';
+  });
+  $('#seasonalTips').innerHTML = tipsHtml;
+}
 
 $$('.route-btn').forEach(function(b){
   b.addEventListener('click', function(){
@@ -4747,39 +6119,400 @@ function toast(msg){
 })();
 
 /* ============================================================
- * 天气 (7天)
+ * 天气 (7天) - 支持JSONP跨域
  * ============================================================ */
 function fetch7DayWeather(){
-  if (location.protocol === 'file:' || !navigator.onLine) {
+  if (!navigator.onLine) {
+    console.log('[天气API] 离线模式');
     return Promise.resolve(null);
   }
-  return fetch('https://api.open-meteo.com/v1/forecast?latitude=28.85&longitude=121.12&daily=temperature_2m_max,temperature_2m_min,weathercode&current_weather=true&timezone=auto')
-    .then(function(r){ return r.json(); })
-    .catch(function(){ return null; });
+  
+  return new Promise(function(resolve){
+    console.log('[天气API] ========== 开始获取天气 ==========');
+    console.log('[天气API] 当前时间:', new Date().toLocaleString());
+    
+    var resolved = false;
+    var timeout = setTimeout(function(){
+      if (!resolved) {
+        console.log('[天气API] ⚠ 所有请求超时');
+        resolved = true;
+        resolve(null);
+      }
+    }, 5000);
+    
+    var complete = function(data){
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timeout);
+      if (data && validateWeatherData(data)) {
+        resolve(data);
+      }
+    };
+    
+    var openMeteoUrl = 'https://api.open-meteo.com/v1/forecast?latitude=28.8647&longitude=121.1352&daily=temperature_2m_max,temperature_2m_min,weathercode,precipitation_probability_max&current_weather=true&timezone=Asia/Shanghai';
+    var tencentUrl = 'https://wis.qq.com/weather/common?source=pc&weather_type=observe|forecast_24h&province=浙江&city=台州&county=临海市';
+    
+    console.log('[天气API] 并行请求:', 'Open-Meteo + 腾讯天气');
+    
+    fetch(tencentUrl, {
+      method: 'GET',
+      signal: AbortSignal.timeout(3000)
+    })
+    .then(function(response){
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.json();
+    })
+    .then(function(data){
+      console.log('[天气API] ✅ 腾讯天气响应最快');
+      var converted = convertTencentWeather(data);
+      complete(converted);
+    })
+    .catch(function(error){
+      console.log('[天气API] 腾讯天气失败:', error.message);
+    });
+    
+    fetch(openMeteoUrl, {
+      method: 'GET',
+      signal: AbortSignal.timeout(4000)
+    })
+    .then(function(response){
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.json();
+    })
+    .then(function(data){
+      console.log('[天气API] ✅ Open-Meteo响应');
+      complete(data);
+    })
+    .catch(function(error){
+      console.log('[天气API] Open-Meteo失败:', error.message);
+    });
+  });
+}
+
+function fetchTencentWeather(resolveCallback){
+  var apiUrl = 'https://wis.qq.com/weather/common?source=pc&weather_type=observe|forecast_24h|forecast_1h&province=浙江&city=台州&county=临海市';
+  console.log('[天气API] 腾讯天气URL:', apiUrl);
+  
+  fetch(apiUrl, {
+    method: 'GET',
+    cache: 'no-cache',
+    signal: AbortSignal.timeout(8000)
+  })
+  .then(function(response){
+    console.log('[天气API] 腾讯天气响应状态:', response.status);
+    if (!response.ok) {
+      throw new Error('HTTP status ' + response.status);
+    }
+    return response.json();
+  })
+  .then(function(data){
+    console.log('[天气API] 腾讯天气解析成功');
+    console.log('[天气API] 腾讯原始数据 status:', data.status);
+    var converted = convertTencentWeather(data);
+    if (converted && validateWeatherData(converted)) {
+      console.log('[天气API] ✅ 腾讯天气数据验证通过，使用腾讯天气数据');
+      console.log('[天气API] 腾讯转换后数据:', '最高=' + converted.daily.temperature_2m_max[0] + 
+        ', 最低=' + converted.daily.temperature_2m_min[0] + 
+        ', 天气码=' + converted.daily.weathercode[0]);
+      resolveCallback(converted);
+    } else {
+      console.log('[天气API] ⚠ 腾讯天气数据无效');
+      resolveCallback(null);
+    }
+  })
+  .catch(function(error){
+    console.error('[天气API] ❌ 腾讯天气请求失败:', error.message);
+    resolveCallback(null);
+  });
+}
+
+function convertTencentWeather(data){
+  if (!data || data.status !== 200 || !data.data) return null;
+  
+  var result = {
+    current_weather: null,
+    daily: {
+      time: [],
+      temperature_2m_max: [],
+      temperature_2m_min: [],
+      weathercode: [],
+      precipitation_probability_max: []
+    }
+  };
+  
+  if (data.data.observe) {
+    var observe = data.data.observe;
+    result.current_weather = {
+      temperature: parseInt(observe.degree) || 25,
+      weathercode: tencentWeatherCodeToWmo(observe.weather)
+    };
+  }
+  
+  if (data.data.forecast_24h) {
+    var forecast = data.data.forecast_24h;
+    var today = new Date();
+    for (var i = 0; i < Math.min(7, forecast.length); i++) {
+      var day = forecast[i];
+      if (!day) continue;
+      
+      var d = new Date(today);
+      d.setDate(d.getDate() + i);
+      result.daily.time.push(d.toISOString().slice(0, 10));
+      
+      var tempRange = day.tem ? day.tem : '20~28';
+      var temps = tempRange.split('~');
+      result.daily.temperature_2m_max.push(parseInt(temps[1]) || 28);
+      result.daily.temperature_2m_min.push(parseInt(temps[0]) || 20);
+      
+      result.daily.weathercode.push(tencentWeatherCodeToWmo(day.wea));
+      result.daily.precipitation_probability_max.push(calculatePrecipitationProbability(day.wea));
+    }
+  }
+  
+  return result;
+}
+
+function tencentWeatherCodeToWmo(weather){
+  if (!weather) return 2;
+  var w = weather.toLowerCase();
+  if (w.indexOf('晴') >= 0) return 0;
+  if (w.indexOf('多云') >= 0) return 2;
+  if (w.indexOf('阴') >= 0) return 3;
+  if (w.indexOf('雨') >= 0) {
+    if (w.indexOf('雷') >= 0) return 95;
+    if (w.indexOf('小') >= 0) return 51;
+    if (w.indexOf('中') >= 0) return 53;
+    if (w.indexOf('大') >= 0) return 55;
+    if (w.indexOf('暴') >= 0) return 57;
+    return 51;
+  }
+  if (w.indexOf('雪') >= 0) {
+    if (w.indexOf('小') >= 0) return 71;
+    if (w.indexOf('中') >= 0) return 73;
+    if (w.indexOf('大') >= 0) return 75;
+    return 71;
+  }
+  if (w.indexOf('雾') >= 0) return 45;
+  if (w.indexOf('霾') >= 0) return 41;
+  return 2;
+}
+
+function calculatePrecipitationProbability(weather){
+  if (!weather) return 30;
+  var w = weather.toLowerCase();
+  if (w.indexOf('晴') >= 0) return 5;
+  if (w.indexOf('多云') >= 0) return 15;
+  if (w.indexOf('阴') >= 0) return 30;
+  if (w.indexOf('小雨') >= 0) return 60;
+  if (w.indexOf('中雨') >= 0) return 75;
+  if (w.indexOf('大雨') >= 0) return 90;
+  if (w.indexOf('暴雨') >= 0) return 98;
+  if (w.indexOf('雷') >= 0) return 85;
+  if (w.indexOf('雪') >= 0) return 50;
+  return 30;
+}
+
+function validateWeatherData(data){
+  if (!data || !data.daily || !data.daily.time || data.daily.time.length < 1) {
+    console.warn('[天气API] 验证失败：daily数据不完整');
+    return false;
+  }
+  if (!data.daily.temperature_2m_max || !data.daily.temperature_2m_min) {
+    console.warn('[天气API] 验证失败：温度数据缺失');
+    return false;
+  }
+  if (data.current_weather) {
+    if (typeof data.current_weather.temperature !== 'number') {
+      console.warn('[天气API] 验证失败：current_weather.temperature不是数字');
+      return false;
+    }
+    var t = data.current_weather.temperature;
+    if (t < -50 || t > 60) {
+      console.warn('[天气API] 温度异常:', t + '°C');
+      return false;
+    }
+  }
+  console.log('[天气API] 数据验证通过');
+  return true;
+}
+
+function fetch7DayWeatherJSONP(resolveCallback){
+  var callbackName = 'wttr7DayCallback_' + Date.now();
+  var timeoutTimer = setTimeout(function() {
+    console.error('[天气API] wttr.in 7天数据超时');
+    resolveCallback(null);
+    delete window[callbackName];
+    var script = document.getElementById('wttr-7day-script');
+    if (script) script.remove();
+  }, 12000);
+  
+  window[callbackName] = function(data){
+    clearTimeout(timeoutTimer);
+    try {
+      var converted = convertWttrData(data);
+      if (converted && converted.daily && converted.daily.time) {
+        console.log('[天气API] wttr.in 7天数据成功:', converted.daily.time.length + '天');
+        resolveCallback(converted);
+      } else {
+        console.error('[天气API] wttr.in数据无效');
+        resolveCallback(null);
+      }
+    } catch(e) {
+      console.error('[天气API] wttr.in解析失败:', e);
+      resolveCallback(null);
+    }
+    delete window[callbackName];
+    var script = document.getElementById('wttr-7day-script');
+    if (script) script.remove();
+  };
+  
+  var script = document.createElement('script');
+  script.id = 'wttr-7day-script';
+  script.src = 'https://wttr.in/28.85,121.12?format=j1&callback=' + callbackName;
+  script.onerror = function() {
+    clearTimeout(timeoutTimer);
+    console.error('[天气API] wttr.in加载失败');
+    resolveCallback(null);
+    delete window[callbackName];
+    script.remove();
+  };
+  document.head.appendChild(script);
+}
+
+function convertWttrData(data){
+  if (!data || !data.weather) return null;
+  var days = [];
+  for (var i = 0; i < Math.min(7, data.weather.length); i++) {
+    var w = data.weather[i];
+    var date = w.date;
+    var maxTemp = parseFloat(w.maxtempC) || 0;
+    var minTemp = parseFloat(w.mintempC) || 0;
+    var desc = w.hourly && w.hourly[0] && w.hourly[0].lang_zh && w.hourly[0].lang_zh[0] && w.hourly[0].lang_zh[0].value || '晴';
+    var code = weatherCodeByName(desc);
+    var precipProb = 0;
+    if (w.hourly && w.hourly.length > 0) {
+      var totalRain = 0;
+      for (var j = 0; j < w.hourly.length; j++) {
+        var h = w.hourly[j];
+        totalRain += parseFloat(h.chanceofrain || 0) + parseFloat(h.chanceofsnow || 0);
+      }
+      precipProb = Math.min(100, Math.round(totalRain / w.hourly.length));
+    }
+    days.push({ date: date, maxTemp: maxTemp, minTemp: minTemp, code: code, desc: desc, precipProb: precipProb });
+  }
+  var current = data.current_condition && data.current_condition[0];
+  return {
+    current_weather: current ? {
+      temperature: parseFloat(current.temp_C) || 0,
+      weathercode: weatherCodeByName(current.weatherDesc && current.weatherDesc[0] && current.weatherDesc[0].value || '晴')
+    } : null,
+    daily: {
+      time: days.map(function(d){ return d.date; }),
+      temperature_2m_max: days.map(function(d){ return d.maxTemp; }),
+      temperature_2m_min: days.map(function(d){ return d.minTemp; }),
+      weathercode: days.map(function(d){ return d.code; }),
+      precipitation_probability: days.map(function(d){ return d.precipProb; })
+    }
+  };
+}
+
+function weatherCodeByName(name){
+  name = (name || '').toLowerCase();
+  if (name.indexOf('晴') >= 0) return 0;
+  if (name.indexOf('大致') >= 0) return 1;
+  if (name.indexOf('多云') >= 0) return 2;
+  if (name.indexOf('阴') >= 0 || name.indexOf('overcast') >= 0) return 3;
+  if (name.indexOf('雾') >= 0 || name.indexOf('mist') >= 0) return 45;
+  if (name.indexOf('小雨') >= 0) return 51;
+  if (name.indexOf('雨') >= 0) {
+    if (name.indexOf('大') >= 0) return 65;
+    return 61;
+  }
+  if (name.indexOf('雪') >= 0) return 71;
+  if (name.indexOf('阵') >= 0) return 80;
+  return 0;
+}
+
+function getCurrentHourWeather(){
+  if (!currentWeather || !currentWeather.hourly || !currentWeather.hourly.time) {
+    return null;
+  }
+  var now = new Date();
+  var currentHour = now.getHours();
+  var todayStr = now.toISOString().slice(0, 10);
+  
+  var hourly = currentWeather.hourly;
+  for (var i = 0; i < hourly.time.length; i++) {
+    var hTime = new Date(hourly.time[i]);
+    if (hTime.toISOString().slice(0, 10) === todayStr && hTime.getHours() === currentHour) {
+      return {
+        temperature: hourly.temperature_2m[i],
+        weathercode: hourly.weathercode[i],
+        precipitation_probability: hourly.precipitation_probability[i]
+      };
+    }
+  }
+  return null;
 }
 
 function renderWeather(idx, target){
   if (!currentWeather) {
-    var msg = (location.protocol === 'file:' || !navigator.onLine) ? '离线模式：无法获取天气' : '台州府城天气获取中…';
+    var msg = navigator.onLine ? '台州府城天气获取中…' : '离线模式：无法获取天气';
     $(target).innerHTML = '<div class="wc-big"><div class="wc-icon">☀️</div><div><div class="wc-temp">--°</div><div class="wc-desc">' + msg + '</div></div></div>';
     return;
   }
   var d = currentWeather.daily;
-  if (!d || !d.time || !d.time[idx]) return;
+  if (!d || !d.time || !d.time[idx]) {
+    console.log('[天气API] 渲染失败：数据不完整', currentWeather);
+    $(target).innerHTML = '<div class="wc-big"><div class="wc-icon">❓</div><div><div class="wc-temp">--°</div><div class="wc-desc">数据加载失败</div></div></div>';
+    return;
+  }
   var dateStr = d.time[idx];
   var wcode = d.weathercode[idx];
   var tMax = Math.round(d.temperature_2m_max[idx]);
   var tMin = Math.round(d.temperature_2m_min[idx]);
+  var precip = null;
+  if (d.precipitation_probability_max && d.precipitation_probability_max[idx] !== undefined) {
+    precip = d.precipitation_probability_max[idx];
+  } else if (d.precipitation_probability && d.precipitation_probability[idx] !== undefined) {
+    precip = d.precipitation_probability[idx];
+  }
+  
   var desc = weatherDesc(wcode);
   var icon = weatherIcon(wcode);
   var weekday = new Date(dateStr).toLocaleDateString('zh-CN', { month:'2-digit', day:'2-digit', weekday:'short' });
+  
+  var currentHourData = getCurrentHourWeather();
+  var currentTemp = currentHourData ? Math.round(currentHourData.temperature) : null;
+  var currentDesc = currentHourData ? weatherDesc(currentHourData.weathercode) : null;
+  var currentPrecip = currentHourData ? currentHourData.precipitation_probability : null;
+  
+  console.log('[天气API] 渲染数据:', {
+    date: dateStr,
+    weekday: weekday,
+    tMin: tMin,
+    tMax: tMax,
+    wcode: wcode,
+    desc: desc,
+    precip: precip,
+    currentTemp: currentTemp,
+    currentDesc: currentDesc,
+    currentPrecip: currentPrecip
+  });
+  
   var html = '';
   html += '<div class="wc-big"><div class="wc-icon">' + icon + '</div><div><div class="wc-temp">' + tMin + '°~' + tMax + '°</div><div class="wc-desc">' + weekday + ' · ' + desc + '</div></div></div>';
   html += '<div class="wc-line">🌡 温度区间：' + tMin + '°C ~ ' + tMax + '°C</div>';
   html += '<div class="wc-line">☁ 天气状况：' + desc + '</div>';
-  if (idx === 0 && currentWeather.current_weather) {
-    var cw = currentWeather.current_weather;
-    html += '<div class="wc-line">📍 当前实时：' + Math.round(cw.temperature) + '°C · ' + weatherDesc(cw.weathercode) + '</div>';
+  if (precip !== null) html += '<div class="wc-line">💧 降水概率：' + precip + '%</div>';
+  if (idx === 0) {
+    if (currentTemp !== null && currentDesc !== null) {
+      html += '<div class="wc-line">📍 当前实时：' + currentTemp + '°C · ' + currentDesc + '</div>';
+      if (currentPrecip !== null) html += '<div class="wc-line">🌧 当前降水概率：' + currentPrecip + '%</div>';
+    } else if (currentWeather.current_weather) {
+      var cw = currentWeather.current_weather;
+      html += '<div class="wc-line">📍 当前实时：' + Math.round(cw.temperature) + '°C · ' + weatherDesc(cw.weathercode) + '</div>';
+    }
   }
   if (tMax >= 33) html += '<div class="wc-line">⚠ 高温预警，注意防晒补水</div>';
   else if (tMin <= 5) html += '<div class="wc-line">🧥 气温较低，注意添衣保暖</div>';
@@ -4791,35 +6524,44 @@ function renderWeather(idx, target){
   var adviseEl = $(adviseId);
   if (adviseEl) {
     var advises = [];
-    if (tMax >= 33) advises.push('☀ 紫外线强，建议穿短袖+遮阳帽，带防晒霜和充足饮用水。');
-    else if (tMax >= 26) advises.push('🌿 温度舒适，建议穿轻便衣物，古城步行游览最佳。');
-    else if (tMin <= 5) advises.push('🧥 气温较低，建议穿厚外套+长裤，注意保暖。');
+    var effectiveTemp = currentTemp !== null ? currentTemp : tMax;
+    if (effectiveTemp >= 33) advises.push('☀ 紫外线强，建议穿短袖+遮阳帽，带防晒霜和充足饮用水。');
+    else if (effectiveTemp >= 26) advises.push('🌿 温度舒适，建议穿轻便衣物，古城步行游览最佳。');
+    else if (effectiveTemp <= 5) advises.push('🧥 气温较低，建议穿厚外套+长裤，注意保暖。');
     else advises.push('🍃 温度适中，建议穿长袖薄外套，便于增减。');
-    if (desc.indexOf('雨') >= 0) advises.push('☂ 有雨，携带雨伞，紫阳街石板路较滑注意安全。');
-    if (desc.indexOf('雪') >= 0) advises.push('❄ 有雪，注意保暖防滑，东湖雪景值得一看。');
+    
+    var effectiveDesc = currentDesc !== null ? currentDesc : desc;
+    if (effectiveDesc.indexOf('雨') >= 0) advises.push('☂ 有雨，携带雨伞，紫阳街石板路较滑注意安全。');
+    if (effectiveDesc.indexOf('雪') >= 0) advises.push('❄ 有雪，注意保暖防滑，东湖雪景值得一看。');
+    
+    var effectivePrecip = currentPrecip !== null ? currentPrecip : precip;
+    if (effectivePrecip !== null && effectivePrecip >= 60) advises.push('🌧️ 降水概率较高，请提前做好防雨准备。');
     advises.push('👟 建议穿舒适运动鞋，府城墙198级台阶挑战不小。');
     adviseEl.innerHTML = advises.map(function(a){ return '· ' + a; }).join('<br>');
   }
 }
 
 function initWeather(){
+  console.log('[天气API] 开始初始化天气模块...');
   fetch7DayWeather().then(function(data){
-    if (!data) {
-      // Fallback
-      currentWeather = {
-        daily: {
-          time: [new Date().toISOString().slice(0,10)],
-          temperature_2m_max: [26],
-          temperature_2m_min: [18],
-          weathercode: [0]
-        }
-      };
-    } else {
-      currentWeather = data;
+    console.log('[天气API] fetch7DayWeather返回:', data ? '成功' : '失败');
+    if (data) {
+      console.log('[天气API] 数据详情:', JSON.stringify({
+        current: data.current_weather ? { temp: data.current_weather.temperature, code: data.current_weather.weathercode } : null,
+        days: data.daily ? data.daily.time.length : 0
+      }));
     }
+    if (!data) {
+      console.error('[天气API] 所有API都失败，无法获取天气数据');
+      $('#weatherBody').innerHTML = '<div class="wc-big"><div class="wc-icon">❌</div><div><div class="wc-temp">--°</div><div class="wc-desc">天气获取失败</div></div></div><div class="wc-line">请检查网络连接后刷新页面</div>';
+      $('#weatherBody2').innerHTML = '<div class="wc-big"><div class="wc-icon">❌</div><div><div class="wc-temp">--°</div><div class="wc-desc">天气获取失败</div></div></div><div class="wc-line">请检查网络连接后刷新页面</div>';
+      $('#weather').innerHTML = '<span>📍</span><span class="temp">--°C</span><span>❌ 获取失败</span>';
+      return;
+    }
+    currentWeather = data;
+    console.log('[天气API] currentWeather已设置:', currentWeather ? '成功' : '失败');
     renderWeather(0, '#weatherBody');
     renderWeather(0, '#weatherBody2');
-    // Mini weather in sidebar
     if (currentWeather.current_weather) {
       $('#itWMIcon').textContent = weatherIcon(currentWeather.current_weather.weathercode);
       $('#itWMTemp').textContent = Math.round(currentWeather.current_weather.temperature) + '°';
@@ -4827,6 +6569,10 @@ function initWeather(){
       $('#itWMIcon').textContent = weatherIcon(currentWeather.daily.weathercode[0]);
       $('#itWMTemp').textContent = Math.round(currentWeather.daily.temperature_2m_max[0]) + '°';
     }
+    loadWeather();
+    console.log('[天气API] 天气模块初始化完成');
+  }).catch(function(e){
+    console.error('[天气API] initWeather异常:', e);
   });
 }
 
@@ -4847,7 +6593,9 @@ function initWeather(){
     if (offset === 0) return '今天';
     if (offset === 1) return '明天';
     if (offset === 2) return '后天';
-    return offset + '月' + (today.getDate() + offset) + '日';
+    var d = new Date(today);
+    d.setDate(d.getDate() + offset);
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日';
   }
 
   function renderCalendar(wrap, viewDate, selectedOffset){
@@ -4902,16 +6650,15 @@ function initWeather(){
     var viewDate = new Date();
     var selectedOffset = 0;
     var target = wrap.dataset.target;
+    var panel = wrap.querySelector('[data-panel]');
 
     function updateWeather(idx){
       if (target === 'smart') renderWeather(idx, '#weatherBody2');
       else renderWeather(idx, '#weatherBody');
-      // Also update header weather chip when main changes
       if (target === 'main' && currentWeather && currentWeather.daily && currentWeather.daily.time){
         var timeArr = currentWeather.daily.time || [];
         var picked = timeArr[idx];
         if (picked){
-          // update header date label (icon + temp kept as current)
           if (currentWeather.daily.weathercode && currentWeather.daily.weathercode[idx] !== undefined){
             $('#itWMIcon').textContent = weatherIcon(currentWeather.daily.weathercode[idx]);
           }
@@ -4922,26 +6669,21 @@ function initWeather(){
 
     renderCalendar(wrap, viewDate, selectedOffset);
 
-    // Toggle panel
     wrap.querySelector('.date-picker-trigger').addEventListener('click', function(e){
       e.stopPropagation();
       var isShow = panel.classList.contains('show');
-      // Close others
       wrappers.forEach(function(w){
         w.querySelector('[data-panel]').classList.remove('show');
       });
       if (!isShow) panel.classList.add('show');
     });
 
-    // Click outside to close
     document.addEventListener('click', function(e){
       if (!wrap.contains(e.target)){
-        // panel might be undefined in some contexts
         try { if (panel) panel.classList.remove('show'); } catch(err) {}
       }
     });
 
-    // Nav prev/next month
     wrap.querySelector('[data-prev="month"]').addEventListener('click', function(){
       viewDate.setMonth(viewDate.getMonth() - 1);
       renderCalendar(wrap, viewDate, selectedOffset);
@@ -4951,13 +6693,11 @@ function initWeather(){
       renderCalendar(wrap, viewDate, selectedOffset);
     });
 
-    // Quick buttons
     wrap.querySelectorAll('.dp-quick button').forEach(function(btn){
       btn.addEventListener('click', function(){
         var offset = parseInt(btn.dataset.quick);
         selectedOffset = offset;
         viewDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        // If offset crosses month, adjust viewDate
         viewDate.setDate(today.getDate() + offset);
         renderCalendar(wrap, viewDate, selectedOffset);
         updateWeather(selectedOffset);
@@ -4965,7 +6705,6 @@ function initWeather(){
       });
     });
 
-    // Click on day
     wrap.querySelector('[data-days]').addEventListener('click', function(e){
       var t = e.target;
       if (!t.classList.contains('dp-day')) return;
@@ -5190,34 +6929,9 @@ function getRouteFallbackQA(q){
   return '建议查阅本页官方推荐路线或点击"智能推荐"获取个性化行程。台州府城文旅热线：0576-85880000。';
 }
 
-$('#routeQASend').addEventListener('click', function(){
-  var input = $('#routeQAInput').value.trim();
-  if (!input) return;
-  var ctx = '当前在台州府城官方推荐路线页面，路线为' + (currentRoute === 'A' ? '经典环线（府城历史精华游）' : '文化深度游') + '。';
-  askRouteQA(input, '#routeQAAns', ctx);
-});
-$('#routeQAInput').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('#routeQASend').click(); });
 
-$('#smartQASend').addEventListener('click', function(){
-  var input = $('#smartQAInput').value.trim();
-  if (!input) return;
-  askRouteQA(input, '#smartQAAns', '用户刚生成了台州府城智能行程，可能在追问行程细节。');
-});
-$('#smartQAInput').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('#smartQASend').click(); });
 
-/* 行程页静音切换 */
-$('#itineraryMute').addEventListener('click', function(){
-  var vids = $('#itinerary').querySelectorAll('.video-bg');
-  if (state.muted) {
-    state.muted = false;
-    vids.forEach(function(v){ try { v.muted = false; v.play(); } catch(e){} });
-    $('#itineraryMute').textContent = '🔊';
-  } else {
-    state.muted = true;
-    vids.forEach(function(v){ try { v.muted = true; } catch(e){} });
-    $('#itineraryMute').textContent = '🔇';
-  }
-});
+
 
 /* ============================================================
  * 智能问答
@@ -5412,26 +7126,31 @@ $('#qaNext').addEventListener('click', function(){
   speak(cur.title + '。' + cur.body);
 });
 
-/* 语速按钮 */
-var rates = [0.6, 0.85, 1.0, 1.2, 1.5];
-var rateIdx = 2;
-$('#voiceRateBtn').addEventListener('click', function(){
-  rateIdx = (rateIdx + 1) % rates.length;
-  state.voiceRate = rates[rateIdx];
-  var icons = ['🐢', '🐇', '🚶', '🏃', '⚡'];
-  $('#voiceRateBtn').textContent = icons[rateIdx];
-  showToast('语速：' + state.voiceRate + 'x');
-});
-
 /* 语音开关 */
-$('#voiceToggle').addEventListener('change', function(){
-  state.voiceEnabled = $('#voiceToggle').checked;
-  if (!state.voiceEnabled) stopAllSpeech();
+$('#voiceToggle').addEventListener('click', function(){
+  var btn = $('#voiceToggle');
+  state.voiceEnabled = !state.voiceEnabled;
+  if (state.voiceEnabled) {
+    btn.textContent = '🔊';
+    btn.classList.add('voice-on');
+    btn.title = '点击静音朗读';
+  } else {
+    btn.textContent = '🔇';
+    btn.classList.remove('voice-on');
+    btn.title = '点击开启朗读';
+    stopAllSpeech();
+  }
 });
 
 /* QA 发送 */
 $('#qaSend').addEventListener('click', sendQAMessage);
 $('#qaInput').addEventListener('keydown', function(e){ if (e.key === 'Enter') sendQAMessage(); });
+
+function sendQuickQuestion(text){
+  var input = $('#qaInput');
+  input.value = text;
+  sendQAMessage();
+}
 
 async function sendQAMessage(){
   var input = $('#qaInput');
@@ -5439,19 +7158,19 @@ async function sendQAMessage(){
   if (!text) return;
   input.value = '';
   $('#girlBubbleText').textContent = '思考中…';
-  showToast('思考中…');
+
+  addChatMsg('user', text);
 
   try {
-    var weather = await getWeather();
-    var prompt = '你是台州府城文化旅游区的智能导游，名叫"花州州"。请用亲切、专业的中文回答游客的问题，结合台州府城的历史文化、景点、美食、交通等信息。回答简洁，控制在 200 字以内。\n\n当前台州天气：' + weather.temp + '°C，' + weather.desc + '。\n游客问题：' + text;
+    var prompt = text;
     var ans = await aiChat(prompt);
     if (!ans) throw new Error('NO_AI');
-    addQACard(text, ans.trim());
+    addChatMsg('bot', ans.trim());
     $('#girlBubbleText').textContent = ans.trim().slice(0, 60) + '…';
     speak(ans.trim());
   } catch(e){
     var fb = fallbackQA(text);
-    addQACard(text, fb);
+    addChatMsg('bot', fb);
     $('#girlBubbleText').textContent = fb;
     speak(fb);
   }
@@ -5477,10 +7196,7 @@ function addChatMsg(role, text){
   }
 }
 
-function addQACard(q, a){
-  addChatMsg('user', q);
-  addChatMsg('bot', a);
-}
+
 
 function fallbackQA(q){
   q = q.toLowerCase();
@@ -5502,45 +7218,49 @@ window.addEventListener('load', function(){
   try { window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = function(){}; } catch(e){}
 
   try {
-    // Set up video
-    state.muted = true;
-    if ($('#homeVid')) {
-      var v = $('#homeVid');
-      v.muted = true;
-      var tryPlay = function(){
-        try { v.currentTime = 0; } catch(e){}
-        try { var p = v.play(); if (p && p.catch) p.catch(function(){}); } catch(e){}
-      };
-      if (v.readyState >= 2) {
-        tryPlay();
-      } else {
-        v.addEventListener('loadeddata', tryPlay, { once: true });
-      }
+    var savedMuted = localStorage.getItem('__MUTED__');
+    state.muted = savedMuted === 'true';
+    var v = $('#globalVideo');
+    var mt = $('#muteToggle');
+    
+    if (v) {
+      v.muted = state.muted;
+      
       v.addEventListener('playing', function(){
         document.body.classList.add('ready');
       }, { once: true });
+      
       v.addEventListener('error', function(){
         document.body.classList.add('ready');
       }, { once: true });
-      setTimeout(function(){ document.body.classList.add('ready'); }, 3000);
-    } else {
-      document.body.classList.add('ready');
+      
+      v.muted = true;
+      state.muted = true;
+      localStorage.setItem('__MUTED__', 'true');
+      v.play();
+    }
+    document.body.classList.add('ready');
+
+    if (mt) mt.textContent = state.muted ? '🔇' : '🔊';
+
+    var hasVisited = localStorage.getItem('__HAS_VISITED__');
+    var splash = $('#homeSplash');
+    if (splash) {
+      if (!hasVisited) {
+        localStorage.setItem('__HAS_VISITED__', 'true');
+        var clone = splash.cloneNode(true);
+        clone.id = 'homeSplash';
+        clone.classList.remove('hide');
+        splash.parentNode.replaceChild(clone, splash);
+        setTimeout(function(){
+          clone.classList.add('hide');
+        }, 5000);
+      } else {
+        splash.classList.add('hide');
+      }
     }
 
-    var mt = $('#muteToggle'); if (mt) mt.textContent = '🔇';
-
     if (state.currentPage === 'home') buildSeasonDecor();
-
-    setTimeout(function(){
-      var s = $('#homeSplash');
-      if (s) s.classList.add('hide');
-    }, 5000);
-
-    document.addEventListener('click', function oneTime(){
-      state.muted = false;
-      var hv = $('#homeVid'); if (hv) { hv.muted = false; $('#muteToggle').textContent = '🔊'; try { hv.play(); } catch(e){} }
-      document.removeEventListener('click', oneTime);
-    }, { once: true });
 
     try {
       var k = localStorage.getItem('__AI_KEY__');
@@ -5568,11 +7288,15 @@ window.addEventListener('load', function(){
   } catch(e){}
 });
 
+var _mapResizeTimer = null;
 window.addEventListener('resize', function(){
-  if (state.mapInit && state.currentPage === 'scenic') {
-    initMap();
-  }
   if (state.currentPage === 'qa') positionQACarousel();
+  if (state.mapInit && state.currentPage === 'scenic') {
+    if (_mapResizeTimer) clearTimeout(_mapResizeTimer);
+    _mapResizeTimer = setTimeout(function(){
+      if (state.currentPage === 'scenic') initMap(true);
+    }, 200);
+  }
 });
 
 // 行程规划页滚动监听
